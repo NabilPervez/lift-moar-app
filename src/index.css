@@ -41,6 +41,32 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .ring-progress { transition: stroke-dashoffset 1s linear; }
 button, .tap { min-height: 44px; min-width: 44px; }
 
+/* ============================== MOTION ==============================
+   CSS-only so animations never get "stuck" if a throttled tab pauses rAF —
+   the resting state is always the visible one. `screenFadeIn` has no
+   fill-mode: if it never runs, the element is simply at its normal opacity. */
+@keyframes screenFadeIn { from { opacity: 0; transform: translateY(4px); } }
+.screen-fade { animation: screenFadeIn 240ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+@keyframes riseIn { from { opacity: 0; transform: translateY(10px); } }
+/* staggered list entrance — `both` holds the from-state until the (small,
+   capped) delay elapses, then settles at the natural visible state */
+.rise-in { animation: riseIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes slideInRight { from { opacity: 0; transform: translateX(24px); } }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-24px); } }
+.slide-in-right { animation: slideInRight 280ms cubic-bezier(0.16, 1, 0.3, 1); }
+.slide-in-left { animation: slideInLeft 280ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* bar-graph fill: width is driven inline; this just eases changes to it */
+.bar-fill { transition: width 550ms cubic-bezier(0.16, 1, 0.3, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-fade, .rise-in, .slide-in-right, .slide-in-left,
+  .flash-cue, .slide-up, .pop-in { animation: none !important; }
+  .bar-fill { transition: none !important; }
+}
+
 /* ============================== LIGHT-MODE UTILITY REMAPS ==============================
    The components are authored dark-first with literal Tailwind color utilities.
    Under the light theme we remap the neutral text/border/fill utilities and the

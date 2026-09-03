@@ -1,16 +1,14 @@
-import { m } from 'framer-motion'
 import { formatDuration } from '../lib/analytics'
-import { fadeUp, staggerParent } from '../lib/motion'
 
-function Stat({ value, label, accent }) {
+function Stat({ value, label, accent, delay }) {
   return (
-    <m.div
-      variants={fadeUp}
-      className="bg-surface-800 rounded-2xl border border-white/5 p-4 text-center"
+    <div
+      className="bg-surface-800 rounded-2xl border border-white/5 p-4 text-center rise-in"
+      style={{ animationDelay: `${delay}ms` }}
     >
       <div className={`num font-black text-2xl ${accent || ''}`}>{value}</div>
       <div className="text-[10px] text-gray-500 uppercase tracking-wide mt-1">{label}</div>
-    </m.div>
+    </div>
   )
 }
 
@@ -18,38 +16,27 @@ export default function WorkoutSummary({ summary, onDone }) {
   const { name, durationMs, totalVolume, completedSets, prs, lifts } = summary
 
   return (
-    <m.div
-      className="min-h-screen pb-28"
-      variants={staggerParent}
-      initial="hidden"
-      animate="show"
-    >
-      <m.div variants={fadeUp} className="px-4 pt-10 pb-4 safe-top text-center">
-        <m.div
-          className="text-4xl mb-2"
-          initial={{ scale: 0.6, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 260, damping: 18, delay: 0.05 }}
-        >
-          🏁
-        </m.div>
+    <div className="min-h-screen pb-28">
+      <div className="px-4 pt-10 pb-4 safe-top text-center rise-in">
+        <div className="text-4xl mb-2 pop-in">🏁</div>
         <h1 className="text-2xl font-black tracking-tight">Workout Complete</h1>
         <p className="text-gray-500 text-sm mt-1">{name}</p>
-      </m.div>
+      </div>
 
       <div className="px-4 grid grid-cols-2 gap-3 mb-3">
-        <Stat value={formatDuration(durationMs)} label="Duration" />
-        <Stat value={completedSets} label="Sets Done" accent="text-emerald-400" />
-        <Stat value={totalVolume.toLocaleString()} label="Total Weight (lb)" />
+        <Stat value={formatDuration(durationMs)} label="Duration" delay={60} />
+        <Stat value={completedSets} label="Sets Done" accent="text-emerald-400" delay={100} />
+        <Stat value={totalVolume.toLocaleString()} label="Total Weight (lb)" delay={140} />
         <Stat
           value={prs.length}
           label={prs.length === 1 ? 'Personal Record' : 'Personal Records'}
           accent={prs.length ? 'text-amber-400' : 'text-gray-500'}
+          delay={180}
         />
       </div>
 
       {prs.length > 0 && (
-        <m.div variants={fadeUp} className="px-4 mb-3">
+        <div className="px-4 mb-3 rise-in" style={{ animationDelay: '220ms' }}>
           <div className="bg-amber-500/10 ring-1 ring-amber-500/30 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-lg">⭐</span>
@@ -68,10 +55,10 @@ export default function WorkoutSummary({ summary, onDone }) {
               ))}
             </div>
           </div>
-        </m.div>
+        </div>
       )}
 
-      <m.div variants={fadeUp} className="px-4">
+      <div className="px-4 rise-in" style={{ animationDelay: '260ms' }}>
         <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
           What you lifted
         </div>
@@ -96,16 +83,16 @@ export default function WorkoutSummary({ summary, onDone }) {
             ))}
           </div>
         )}
-      </m.div>
+      </div>
 
-      <m.div variants={fadeUp} className="px-4 mt-6">
+      <div className="px-4 mt-6 rise-in" style={{ animationDelay: '300ms' }}>
         <button
           onClick={onDone}
           className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-transform text-white font-bold py-4 rounded-xl text-lg"
         >
           Done
         </button>
-      </m.div>
-    </m.div>
+      </div>
+    </div>
   )
 }

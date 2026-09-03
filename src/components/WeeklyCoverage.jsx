@@ -1,15 +1,19 @@
-import { useMemo } from 'react'
-import { m as Motion, useReducedMotion } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
 import { MUSCLES, MUSCLE_STYLE } from '../lib/constants'
 import { muscleLoad } from '../lib/exercises'
 
 /**
  * Whole-week muscle-group coverage: every muscle, counted by how many
  * exercises across all scheduled days hit it. Untrained muscles stay on the
- * chart (faint) so gaps in the week are obvious.
+ * chart (faint) so gaps in the week are obvious. Bars fill via a CSS width
+ * transition flipped just after mount.
  */
 export default function WeeklyCoverage({ weekTemplates, exercises }) {
-  const reduce = useReducedMotion()
+  const [fill, setFill] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setFill(true), 30)
+    return () => clearTimeout(t)
+  }, [])
 
   const { rows, totalExercises, trainingDays, maxCount } = useMemo(() => {
     const refs = weekTemplates.flatMap((t) => t.exercises)
@@ -47,11 +51,9 @@ export default function WeeklyCoverage({ weekTemplates, exercises }) {
                 {name}
               </span>
               <div className="flex-1 h-2 rounded-full bg-surface-700 overflow-hidden">
-                <Motion.div
-                  className={`h-full rounded-full ${st.dot || 'bg-gray-500'}`}
-                  initial={reduce ? false : { width: 0 }}
-                  animate={{ width: `${pct}%` }}
-                  transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.05 + i * 0.03 }}
+                <div
+                  className={`h-full rounded-full bar-fill ${st.dot || 'bg-gray-500'}`}
+                  style={{ width: fill ? `${pct}%` : 0, transitionDelay: `${i * 30}ms` }}
                 />
               </div>
               <span className="num text-[10px] text-gray-500 w-4 text-right">{count}</span>

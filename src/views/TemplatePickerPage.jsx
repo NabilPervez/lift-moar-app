@@ -25,7 +25,7 @@ export default function TemplatePickerPage({
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-surface overflow-y-auto">
+    <div className="fixed inset-0 z-40 bg-surface overflow-y-auto screen-fade">
       <div className="max-w-md mx-auto min-h-screen pb-16">
         <Header title={`Assign · ${day}`} subtitle="Pick a workout for this day" onBack={onClose} />
 

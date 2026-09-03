@@ -1,12 +1,10 @@
 import { useState } from 'react'
-import { m } from 'framer-motion'
 import Header from '../components/Header'
 import TargetingBars from '../components/TargetingBars'
 import WeeklyCoverage from '../components/WeeklyCoverage'
 import TemplatePickerPage from './TemplatePickerPage'
 import { DAYS } from '../lib/constants'
 import { muscleLoad } from '../lib/exercises'
-import { fadeUp, staggerParent } from '../lib/motion'
 
 export default function ScheduleView({
   schedule,
@@ -28,17 +26,12 @@ export default function ScheduleView({
     <div className="pb-28">
       <Header title="Schedule" subtitle="Your training week at a glance" />
 
-      <m.div
-        className="px-4 space-y-3"
-        variants={staggerParent}
-        initial="hidden"
-        animate="show"
-      >
-        <m.div variants={fadeUp}>
+      <div className="px-4 space-y-3">
+        <div className="rise-in" style={{ animationDelay: '0ms' }}>
           <WeeklyCoverage weekTemplates={weekTemplates} exercises={exercises} />
-        </m.div>
+        </div>
 
-        {DAYS.map((day) => {
+        {DAYS.map((day, idx) => {
           const tmpl = resolve(schedule[day])
           const isToday = day === todayName
           const load = tmpl ? muscleLoad(tmpl.exercises, exercises) : []
@@ -46,12 +39,12 @@ export default function ScheduleView({
             ? tmpl.exercises.reduce((s, e) => s + (Number(e.targetSets) || 0), 0)
             : 0
           return (
-            <m.div
+            <div
               key={day}
-              variants={fadeUp}
-              className={`rounded-2xl p-4 border ${
+              className={`rise-in rounded-2xl p-4 border ${
                 isToday ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/5 bg-surface-800'
               }`}
+              style={{ animationDelay: `${Math.min(idx + 1, 6) * 45}ms` }}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
@@ -93,10 +86,10 @@ export default function ScheduleView({
               ) : (
                 <div className="text-gray-600 italic text-sm py-2">Rest day</div>
               )}
-            </m.div>
+            </div>
           )
         })}
-      </m.div>
+      </div>
 
       {pickerDay && (
         <TemplatePickerPage

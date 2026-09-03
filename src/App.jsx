@@ -1,5 +1,4 @@
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { m } from 'framer-motion'
 import BottomNav from './components/BottomNav'
 import NewExerciseModal from './components/NewExerciseModal'
 import ScheduleView from './views/ScheduleView'
@@ -127,12 +126,16 @@ export default function App() {
   const createExercise = (ex) => setExercises((list) => [...list, ex])
   const deleteExercise = (id) => setExercises((list) => list.filter((e) => e.id !== id))
 
-  if (!onboarded) {
-    return <Onboarding onDone={finishOnboarding} />
-  }
+  // ---- resolve the current full-screen view + a stable key for transitions ----
+  let screenKey
+  let screenEl
 
-  if (activeWorkout) {
-    return (
+  if (!onboarded) {
+    screenKey = 'onboarding'
+    screenEl = <Onboarding onDone={finishOnboarding} />
+  } else if (activeWorkout) {
+    screenKey = 'workout'
+    screenEl = (
       <ActiveWorkout
         workout={activeWorkout}
         exercises={exercises}
@@ -141,10 +144,9 @@ export default function App() {
         onCancel={() => setActiveWorkout(null)}
       />
     )
-  }
-
-  if (showHistory) {
-    return (
+  } else if (showHistory) {
+    screenKey = 'history'
+    screenEl = (
       <div className="max-w-md mx-auto min-h-screen">
         <HistoryView
           history={history}
@@ -154,10 +156,9 @@ export default function App() {
         />
       </div>
     )
-  }
-
-  if (managingExercises) {
-    return (
+  } else if (managingExercises) {
+    screenKey = 'exercise-library'
+    screenEl = (
       <ExerciseLibraryManager
         exercises={exercises}
         onCreate={createExercise}
@@ -165,10 +166,9 @@ export default function App() {
         onBack={() => setManagingExercises(false)}
       />
     )
-  }
-
-  if (editingTemplate !== undefined) {
-    return (
+  } else if (editingTemplate !== undefined) {
+    screenKey = 'template-editor'
+    screenEl = (
       <div>
         <TemplateEditor
           template={editingTemplate}
@@ -188,16 +188,10 @@ export default function App() {
         )}
       </div>
     )
-  }
-
-  return (
-    <div className="max-w-md mx-auto min-h-screen">
-      <m.div
-        key={view}
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-      >
+  } else {
+    screenKey = `tab:${view}`
+    screenEl = (
+      <div className="max-w-md mx-auto min-h-screen">
         {view === 'schedule' && (
           <ScheduleView
             schedule={schedule}
@@ -246,8 +240,18 @@ export default function App() {
             onReplayIntro={replayOnboarding}
           />
         )}
-      </m.div>
-      <BottomNav view={view} setView={setView} />
-    </div>
+      </div>
+    )
+  }
+
+  const onTab = screenKey.startsWith('tab:')
+
+  return (
+    <>
+      <div key={screenKey} className="screen-fade">
+        {screenEl}
+      </div>
+      {onTab && <BottomNav view={view} setView={setView} />}
+    </>
   )
 }
