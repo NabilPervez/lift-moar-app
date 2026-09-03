@@ -1,9 +1,12 @@
 import { useState } from 'react'
+import { m } from 'framer-motion'
 import Header from '../components/Header'
 import TargetingBars from '../components/TargetingBars'
+import WeeklyCoverage from '../components/WeeklyCoverage'
 import TemplatePickerPage from './TemplatePickerPage'
 import { DAYS } from '../lib/constants'
 import { muscleLoad } from '../lib/exercises'
+import { fadeUp, staggerParent } from '../lib/motion'
 
 export default function ScheduleView({
   schedule,
@@ -19,10 +22,22 @@ export default function ScheduleView({
   const resolve = (id) =>
     id ? templates.find((t) => t.id === id) || premadeTemplates.find((t) => t.id === id) || null : null
 
+  const weekTemplates = DAYS.map((d) => resolve(schedule[d])).filter(Boolean)
+
   return (
     <div className="pb-28">
       <Header title="Schedule" subtitle="Your training week at a glance" />
-      <div className="px-4 space-y-3">
+
+      <m.div
+        className="px-4 space-y-3"
+        variants={staggerParent}
+        initial="hidden"
+        animate="show"
+      >
+        <m.div variants={fadeUp}>
+          <WeeklyCoverage weekTemplates={weekTemplates} exercises={exercises} />
+        </m.div>
+
         {DAYS.map((day) => {
           const tmpl = resolve(schedule[day])
           const isToday = day === todayName
@@ -31,8 +46,9 @@ export default function ScheduleView({
             ? tmpl.exercises.reduce((s, e) => s + (Number(e.targetSets) || 0), 0)
             : 0
           return (
-            <div
+            <m.div
               key={day}
+              variants={fadeUp}
               className={`rounded-2xl p-4 border ${
                 isToday ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/5 bg-surface-800'
               }`}
@@ -77,10 +93,10 @@ export default function ScheduleView({
               ) : (
                 <div className="text-gray-600 italic text-sm py-2">Rest day</div>
               )}
-            </div>
+            </m.div>
           )
         })}
-      </div>
+      </m.div>
 
       {pickerDay && (
         <TemplatePickerPage

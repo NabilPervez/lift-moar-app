@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
+import { m } from 'framer-motion'
 import BottomNav from './components/BottomNav'
 import NewExerciseModal from './components/NewExerciseModal'
 import ScheduleView from './views/ScheduleView'
@@ -6,10 +7,12 @@ import TemplatesView from './views/TemplatesView'
 import TemplateEditor from './views/TemplateEditor'
 import ExerciseLibraryManager from './views/ExerciseLibraryManager'
 import HistoryView from './views/HistoryView'
-import DashboardView from './views/DashboardView'
 import SettingsView from './views/SettingsView'
 import ActiveWorkout from './views/ActiveWorkout'
 import Onboarding from './components/Onboarding'
+
+// Chart.js lives only on the Progress tab — load it on demand.
+const DashboardView = lazy(() => import('./views/DashboardView'))
 import { LS_KEYS, loadLS, saveLS, uid } from './lib/storage'
 import {
   DEFAULT_EXERCISES,
@@ -189,50 +192,61 @@ export default function App() {
 
   return (
     <div className="max-w-md mx-auto min-h-screen">
-      {view === 'schedule' && (
-        <ScheduleView
-          schedule={schedule}
-          templates={templates}
-          premadeTemplates={PREMADE_TEMPLATES}
-          exercises={exercises}
-          onAssign={assignDay}
-          onStart={startWorkout}
-        />
-      )}
-      {view === 'templates' && (
-        <TemplatesView
-          templates={templates}
-          premadeTemplates={PREMADE_TEMPLATES}
-          exercises={exercises}
-          schedule={schedule}
-          onNew={() => setEditingTemplate(null)}
-          onEdit={(t) => setEditingTemplate(t)}
-          onDelete={deleteTemplate}
-          onDuplicate={duplicateTemplate}
-          onManageExercises={() => setManagingExercises(true)}
-        />
-      )}
-      {view === 'dashboard' && (
-        <DashboardView
-          history={history}
-          exercises={exercises}
-          theme={theme}
-          onOpenHistory={() => setShowHistory(true)}
-          onDeleteWorkout={deleteWorkout}
-        />
-      )}
-      {view === 'settings' && (
-        <SettingsView
-          theme={theme}
-          setTheme={setTheme}
-          history={history}
-          setHistory={setHistory}
-          onOpenHistory={() => setShowHistory(true)}
-          onLoadSample={loadSampleHistory}
-          onClearHistory={clearHistory}
-          onReplayIntro={replayOnboarding}
-        />
-      )}
+      <m.div
+        key={view}
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      >
+        {view === 'schedule' && (
+          <ScheduleView
+            schedule={schedule}
+            templates={templates}
+            premadeTemplates={PREMADE_TEMPLATES}
+            exercises={exercises}
+            onAssign={assignDay}
+            onStart={startWorkout}
+          />
+        )}
+        {view === 'templates' && (
+          <TemplatesView
+            templates={templates}
+            premadeTemplates={PREMADE_TEMPLATES}
+            exercises={exercises}
+            schedule={schedule}
+            onNew={() => setEditingTemplate(null)}
+            onEdit={(t) => setEditingTemplate(t)}
+            onDelete={deleteTemplate}
+            onDuplicate={duplicateTemplate}
+            onManageExercises={() => setManagingExercises(true)}
+          />
+        )}
+        {view === 'dashboard' && (
+          <Suspense
+            fallback={<div className="px-4 pt-10 text-gray-500 text-sm">Loading charts…</div>}
+          >
+            <DashboardView
+              history={history}
+              exercises={exercises}
+              theme={theme}
+              onOpenHistory={() => setShowHistory(true)}
+              onDeleteWorkout={deleteWorkout}
+            />
+          </Suspense>
+        )}
+        {view === 'settings' && (
+          <SettingsView
+            theme={theme}
+            setTheme={setTheme}
+            history={history}
+            setHistory={setHistory}
+            onOpenHistory={() => setShowHistory(true)}
+            onLoadSample={loadSampleHistory}
+            onClearHistory={clearHistory}
+            onReplayIntro={replayOnboarding}
+          />
+        )}
+      </m.div>
       <BottomNav view={view} setView={setView} />
     </div>
   )

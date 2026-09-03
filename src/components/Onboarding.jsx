@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AnimatePresence, m, useReducedMotion } from 'framer-motion'
 
 const SLIDES = [
   {
@@ -29,9 +30,12 @@ const SLIDES = [
 ]
 
 export default function Onboarding({ onDone }) {
-  const [i, setI] = useState(0)
+  const [[i, dir], setStep] = useState([0, 0])
+  const reduce = useReducedMotion()
   const last = i === SLIDES.length - 1
   const s = SLIDES[i]
+  const go = (delta) => setStep(([cur]) => [cur + delta, delta])
+  const shift = reduce ? 0 : 24
 
   return (
     <div className="fixed inset-0 z-50 bg-surface flex flex-col safe-top safe-bottom">
@@ -41,36 +45,48 @@ export default function Onboarding({ onDone }) {
         </button>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-        <div className="w-20 h-20 rounded-3xl bg-blue-600/15 ring-1 ring-blue-500/30 flex items-center justify-center text-4xl text-blue-400 mb-8">
-          {s.icon}
-        </div>
-        <h2 className="text-2xl font-black tracking-tight mb-3">{s.title}</h2>
-        <p className="text-gray-400 leading-relaxed max-w-sm">{s.body}</p>
+      <div className="flex-1 flex flex-col items-center justify-center px-8 text-center overflow-hidden">
+        <AnimatePresence mode="wait" custom={dir}>
+          <m.div
+            key={i}
+            custom={dir}
+            initial={{ opacity: 0, x: dir >= 0 ? shift : -shift }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: dir >= 0 ? -shift : shift }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col items-center"
+          >
+            <div className="w-20 h-20 rounded-3xl bg-blue-600/15 ring-1 ring-blue-500/30 flex items-center justify-center text-4xl text-blue-400 mb-8">
+              {s.icon}
+            </div>
+            <h2 className="text-2xl font-black tracking-tight mb-3">{s.title}</h2>
+            <p className="text-gray-400 leading-relaxed max-w-sm">{s.body}</p>
+          </m.div>
+        </AnimatePresence>
       </div>
 
       <div className="px-8 pb-8">
         <div className="flex justify-center gap-2 mb-6">
           {SLIDES.map((_, idx) => (
-            <span
+            <m.span
               key={idx}
-              className={`h-1.5 rounded-full transition-all ${
-                idx === i ? 'w-6 bg-blue-500' : 'w-1.5 bg-surface-600'
-              }`}
+              className={`h-1.5 rounded-full ${idx === i ? 'bg-blue-500' : 'bg-surface-600'}`}
+              animate={{ width: idx === i ? 24 : 6 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             />
           ))}
         </div>
         <div className="flex gap-3">
           {i > 0 && (
             <button
-              onClick={() => setI((v) => v - 1)}
+              onClick={() => go(-1)}
               className="tap flex-1 bg-surface-700 hover:bg-surface-600 text-gray-200 font-bold py-3.5 rounded-xl"
             >
               Back
             </button>
           )}
           <button
-            onClick={() => (last ? onDone() : setI((v) => v + 1))}
+            onClick={() => (last ? onDone() : go(1))}
             className="tap flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl"
           >
             {last ? 'Get started' : 'Next'}

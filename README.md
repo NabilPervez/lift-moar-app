@@ -11,6 +11,8 @@ Live: https://lift-moar.netlify.app/
 - [Vite](https://vite.dev/) + React 18
 - Installable **PWA** (`vite-plugin-pwa` / Workbox) — offline-capable, add-to-home-screen
 - Tailwind CSS 3, CSS-variable-driven dark/light theming
+- [Framer Motion](https://www.framer.com/motion/) (`LazyMotion` + `m`) — subtle fade / stagger animations, honours reduced-motion
+- Chart.js chunk code-split behind the Progress tab
 - [Chart.js](https://www.chartjs.org/) via `react-chartjs-2` (Progress dashboard)
 - [dnd-kit](https://dndkit.com/) — drag-to-reorder exercises mid-workout (touch + mouse)
 - All data is stored locally in the browser (`localStorage`) — no backend
@@ -68,6 +70,7 @@ src/
     migrations.js        One-time data migration (folds new defaults into old installs)
     theme.js             Dark/light theme persistence + <html data-theme> application
     constants.js        DAYS, MUSCLES, MUSCLE_STYLE
+    motion.js           Shared framer-motion variants (fade / fadeUp / stagger)
     exercises.js        Exercise library, user templates, weekly schedule, muscleLoad()
     premadeTemplates.js 20 read-only built-in workouts (never persisted)
     mockHistory.js      Generated ~10-week sample training block (fresh-install seed)
@@ -78,6 +81,7 @@ src/
     Header.jsx
     Pill.jsx            Muscle-group chip
     TargetingBars.jsx   Muscle-load mini bar chart
+    WeeklyCoverage.jsx  Whole-week muscle-group coverage bar chart (Schedule page)
     TemplateSummaryCard.jsx  Reusable template card (name, theme, counts, bars)
     ConfirmButton.jsx   Two-tap button for destructive actions (no window.confirm)
     Onboarding.jsx      First-run walkthrough (replayable from Settings)
