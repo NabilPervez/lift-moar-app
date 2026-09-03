@@ -17,7 +17,9 @@ import RestTimer from '../components/RestTimer'
 import SwapModal from '../components/SwapModal'
 import TargetingBars from '../components/TargetingBars'
 import WorkoutExerciseCard from '../components/WorkoutExerciseCard'
+import WorkoutSummary from './WorkoutSummary'
 import { exById, muscleLoad } from '../lib/exercises'
+import { computeWorkoutSummary } from '../lib/analytics'
 import { uid } from '../lib/storage'
 import { playChime } from '../lib/audio'
 
@@ -32,7 +34,9 @@ export default function ActiveWorkout({ workout, exercises, history, onFinish, o
   const [restLeft, setRestLeft] = useState(0)
   const [restTotal, setRestTotal] = useState(90)
   const [flash, setFlash] = useState(false)
+  const [summary, setSummary] = useState(null)
   const timerRef = useRef(null)
+  const startedAtRef = useRef(Date.now())
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -143,6 +147,22 @@ export default function ActiveWorkout({ workout, exercises, history, onFinish, o
   const muscleSummary = useMemo(() => muscleLoad(wo.exercises, exercises), [wo, exercises])
   const swapTarget = swapKey && wo.exercises.find((e) => e.key === swapKey)
 
+  const finish = () => {
+    const named = {
+      ...wo,
+      exercises: wo.exercises.map((e) => {
+        const meta = exById(exercises, e.exerciseId)
+        return { ...e, name: meta ? meta.name : e.name, muscles: meta ? meta.muscles : e.muscles }
+      }),
+    }
+    setSummary(computeWorkoutSummary(named, history, startedAtRef.current))
+    setWo(named)
+  }
+
+  if (summary) {
+    return <WorkoutSummary summary={summary} onDone={() => onFinish(wo)} />
+  }
+
   return (
     <div className="pb-32">
       {flash && (
@@ -193,7 +213,7 @@ export default function ActiveWorkout({ workout, exercises, history, onFinish, o
 
       <div className="px-4 mt-6">
         <button
-          onClick={() => onFinish(wo)}
+          onClick={finish}
           className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-transform text-white font-bold py-4 rounded-xl shadow-lg text-lg"
         >
           Finish Workout

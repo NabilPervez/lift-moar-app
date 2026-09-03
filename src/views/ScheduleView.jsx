@@ -1,20 +1,30 @@
 import { useState } from 'react'
 import Header from '../components/Header'
 import TargetingBars from '../components/TargetingBars'
+import TemplatePickerPage from './TemplatePickerPage'
 import { DAYS } from '../lib/constants'
 import { muscleLoad } from '../lib/exercises'
 
-export default function ScheduleView({ schedule, templates, exercises, onAssign, onStart }) {
+export default function ScheduleView({
+  schedule,
+  templates,
+  premadeTemplates,
+  exercises,
+  onAssign,
+  onStart,
+}) {
   const [pickerDay, setPickerDay] = useState(null)
   const todayName = DAYS[(new Date().getDay() + 6) % 7]
+
+  const resolve = (id) =>
+    id ? templates.find((t) => t.id === id) || premadeTemplates.find((t) => t.id === id) || null : null
 
   return (
     <div className="pb-28">
       <Header title="Schedule" subtitle="Your training week at a glance" />
       <div className="px-4 space-y-3">
         {DAYS.map((day) => {
-          const tmplId = schedule[day]
-          const tmpl = tmplId ? templates.find((t) => t.id === tmplId) : null
+          const tmpl = resolve(schedule[day])
           const isToday = day === todayName
           const load = tmpl ? muscleLoad(tmpl.exercises, exercises) : []
           const totalSets = tmpl
@@ -53,6 +63,7 @@ export default function ScheduleView({ schedule, templates, exercises, onAssign,
                 <div>
                   <div className="font-bold text-lg">{tmpl.name}</div>
                   <div className="text-gray-500 text-xs mb-3">
+                    {tmpl.premade ? `${tmpl.theme} · ` : ''}
                     {tmpl.exercises.length} exercises · {totalSets} sets
                   </div>
                   <TargetingBars items={load} limit={5} labelWidth="w-16" />
@@ -72,41 +83,15 @@ export default function ScheduleView({ schedule, templates, exercises, onAssign,
       </div>
 
       {pickerDay && (
-        <div
-          className="fixed inset-0 z-40 flex items-end justify-center bg-black/60"
-          onClick={() => setPickerDay(null)}
-        >
-          <div
-            className="slide-up bg-surface-800 rounded-t-3xl w-full max-w-md p-5 safe-bottom"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-4"></div>
-            <h3 className="font-bold text-lg mb-4">Assign a template to {pickerDay}</h3>
-            <div className="space-y-2 max-h-72 overflow-y-auto">
-              <button
-                onClick={() => {
-                  onAssign(pickerDay, null)
-                  setPickerDay(null)
-                }}
-                className="w-full text-left px-4 py-3 rounded-xl bg-surface-700 hover:bg-surface-600 text-gray-400 italic"
-              >
-                Rest day
-              </button>
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => {
-                    onAssign(pickerDay, t.id)
-                    setPickerDay(null)
-                  }}
-                  className="w-full text-left px-4 py-3 rounded-xl bg-surface-700 hover:bg-surface-600 font-semibold"
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <TemplatePickerPage
+          day={pickerDay}
+          currentId={schedule[pickerDay] || null}
+          userTemplates={templates}
+          premadeTemplates={premadeTemplates}
+          exercises={exercises}
+          onAssign={onAssign}
+          onClose={() => setPickerDay(null)}
+        />
       )}
     </div>
   )

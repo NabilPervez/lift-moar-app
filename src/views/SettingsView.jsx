@@ -228,6 +228,18 @@ export default function SettingsView({
             </ConfirmButton>
           </div>
         </section>
+
+        <p className="text-center text-xs text-gray-500 pt-2">
+          Made by{' '}
+          <a
+            href="https://nabilpervezconsulting.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gray-400 hover:text-blue-400 underline underline-offset-2"
+          >
+            nabilpervezconsulting.com
+          </a>
+        </p>
       </div>
     </div>
   )

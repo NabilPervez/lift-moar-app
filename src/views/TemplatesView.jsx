@@ -1,21 +1,22 @@
 import Header from '../components/Header'
-import Pill from '../components/Pill'
+import TemplateSummaryCard from '../components/TemplateSummaryCard'
 import { DAYS } from '../lib/constants'
-import { exById } from '../lib/exercises'
 
 export default function TemplatesView({
   templates,
+  premadeTemplates,
   exercises,
   schedule,
   onNew,
   onEdit,
   onDelete,
+  onDuplicate,
   onManageExercises,
 }) {
   return (
     <div className="pb-28">
       <Header title="Templates" subtitle="Build and manage your routines" />
-      <div className="px-4 flex gap-2 mb-5">
+      <div className="px-4 flex gap-2 mb-6">
         <button
           onClick={onNew}
           className="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl tap"
@@ -29,30 +30,27 @@ export default function TemplatesView({
           Exercise Library
         </button>
       </div>
-      <div className="px-4 space-y-3">
+
+      {/* ---------- User-made ---------- */}
+      <div className="px-4 mb-2 flex items-baseline justify-between">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400">Your Templates</h2>
+        <span className="text-xs text-gray-600 num">{templates.length}</span>
+      </div>
+      <div className="px-4 space-y-3 mb-8">
         {templates.length === 0 && (
-          <p className="text-gray-500 italic">No templates yet. Create one to get started.</p>
+          <p className="text-gray-500 italic text-sm">
+            None yet — create one, or duplicate a pre-made workout below.
+          </p>
         )}
         {templates.map((t) => {
           const days = DAYS.filter((d) => schedule[d] === t.id)
-          const muscleSet = Array.from(
-            new Set(
-              t.exercises.flatMap(
-                (e) => (exById(exercises, e.exerciseId) || { muscles: [] }).muscles,
-              ),
-            ),
-          )
           return (
-            <div key={t.id} className="bg-surface-800 rounded-2xl p-4 border border-white/5">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <div className="font-bold text-lg">{t.name}</div>
-                  <div className="text-gray-500 text-sm">
-                    {t.exercises.length} exercises
-                    {days.length ? ` · ${days.join(', ')}` : ''}
-                  </div>
-                </div>
-                <div className="flex gap-1">
+            <TemplateSummaryCard
+              key={t.id}
+              template={t}
+              exercises={exercises}
+              actions={
+                <>
                   <button
                     aria-label={`Edit ${t.name}`}
                     onClick={() => onEdit(t)}
@@ -67,16 +65,41 @@ export default function TemplatesView({
                   >
                     &#128465;
                   </button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {muscleSet.map((m) => (
-                  <Pill key={m} label={m} styleKey={m} small />
-                ))}
-              </div>
-            </div>
+                </>
+              }
+              footer={
+                days.length ? (
+                  <div className="text-xs text-blue-400 font-semibold">
+                    Scheduled: {days.join(', ')}
+                  </div>
+                ) : null
+              }
+            />
           )
         })}
+      </div>
+
+      {/* ---------- Pre-made ---------- */}
+      <div className="px-4 mb-2 flex items-baseline justify-between">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400">Pre-Made</h2>
+        <span className="text-xs text-gray-600 num">{premadeTemplates.length}</span>
+      </div>
+      <div className="px-4 space-y-3">
+        {premadeTemplates.map((t) => (
+          <TemplateSummaryCard
+            key={t.id}
+            template={t}
+            exercises={exercises}
+            footer={
+              <button
+                onClick={() => onDuplicate(t)}
+                className="tap w-full text-sm font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 py-2.5 rounded-xl"
+              >
+                + Duplicate to my templates
+              </button>
+            }
+          />
+        ))}
       </div>
     </div>
   )

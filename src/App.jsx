@@ -10,7 +10,7 @@ import DashboardView from './views/DashboardView'
 import SettingsView from './views/SettingsView'
 import ActiveWorkout from './views/ActiveWorkout'
 import Onboarding from './components/Onboarding'
-import { LS_KEYS, loadLS, saveLS } from './lib/storage'
+import { LS_KEYS, loadLS, saveLS, uid } from './lib/storage'
 import {
   DEFAULT_EXERCISES,
   exById,
@@ -18,6 +18,7 @@ import {
   makeDefaultTemplates,
 } from './lib/exercises'
 import { DEFAULT_HISTORY } from './lib/mockHistory'
+import { PREMADE_TEMPLATES } from './lib/premadeTemplates'
 import { applyTheme, getStoredTheme, saveTheme } from './lib/theme'
 import { getSettings, patchSettings } from './lib/settings'
 
@@ -98,6 +99,15 @@ export default function App() {
       return exists ? ts.map((t) => (t.id === tmpl.id ? tmpl : t)) : [...ts, tmpl]
     })
     setEditingTemplate(undefined)
+  }
+  const duplicateTemplate = (src) => {
+    const copy = {
+      id: uid('tmpl'),
+      name: `${src.name}${src.premade ? '' : ' (copy)'}`,
+      exercises: src.exercises.map((e) => ({ ...e })),
+    }
+    setTemplates((ts) => [...ts, copy])
+    setEditingTemplate(copy)
   }
   const deleteTemplate = (id) => {
     setTemplates((ts) => ts.filter((t) => t.id !== id))
@@ -183,6 +193,7 @@ export default function App() {
         <ScheduleView
           schedule={schedule}
           templates={templates}
+          premadeTemplates={PREMADE_TEMPLATES}
           exercises={exercises}
           onAssign={assignDay}
           onStart={startWorkout}
@@ -191,11 +202,13 @@ export default function App() {
       {view === 'templates' && (
         <TemplatesView
           templates={templates}
+          premadeTemplates={PREMADE_TEMPLATES}
           exercises={exercises}
           schedule={schedule}
           onNew={() => setEditingTemplate(null)}
           onEdit={(t) => setEditingTemplate(t)}
           onDelete={deleteTemplate}
+          onDuplicate={duplicateTemplate}
           onManageExercises={() => setManagingExercises(true)}
         />
       )}

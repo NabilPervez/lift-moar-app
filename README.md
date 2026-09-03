@@ -15,6 +15,8 @@ Live: https://lift-moar.netlify.app/
 - [dnd-kit](https://dndkit.com/) — drag-to-reorder exercises mid-workout (touch + mouse)
 - All data is stored locally in the browser (`localStorage`) — no backend
 - ~155-exercise starter library + a ready-made Upper/Lower/Bodyweight plan
+- 20-workout pre-made library (`premadeTemplates.js`) — assignable, duplicable
+- Post-workout summary (duration, volume, sets, e1RM personal records)
 - First-run onboarding walkthrough + a generated sample training block
 
 ## Getting started
@@ -66,28 +68,34 @@ src/
     migrations.js        One-time data migration (folds new defaults into old installs)
     theme.js             Dark/light theme persistence + <html data-theme> application
     constants.js        DAYS, MUSCLES, MUSCLE_STYLE
-    exercises.js        Exercise library, provided templates, weekly schedule
+    exercises.js        Exercise library, user templates, weekly schedule, muscleLoad()
+    premadeTemplates.js 20 read-only built-in workouts (never persisted)
     mockHistory.js      Generated ~10-week sample training block (fresh-install seed)
     audio.js            Rest-timer chime + time formatting
-    analytics.js        Progress dashboard data derivation
+    analytics.js        Progress dashboard + post-workout summary derivation
   components/
     BottomNav.jsx       Primary tab bar (Schedule / Templates / Progress / Settings)
     Header.jsx
     Pill.jsx            Muscle-group chip
+    TargetingBars.jsx   Muscle-load mini bar chart
+    TemplateSummaryCard.jsx  Reusable template card (name, theme, counts, bars)
     ConfirmButton.jsx   Two-tap button for destructive actions (no window.confirm)
     Onboarding.jsx      First-run walkthrough (replayable from Settings)
     RestTimer.jsx
     ExercisePickerModal.jsx
     NewExerciseModal.jsx
     SwapModal.jsx
-    WorkoutDetailModal.jsx  Full set-by-set breakdown + delete
+    WorkoutExerciseCard.jsx  Draggable exercise card used in a live workout
+    WorkoutDetailModal.jsx   Full set-by-set breakdown + delete
   views/
     ScheduleView.jsx
-    TemplatesView.jsx
+    TemplatePickerPage.jsx   Full-page assign flow (Your Templates + Pre-Made)
+    TemplatesView.jsx        Two sections: user-made, then pre-made
     TemplateEditor.jsx
     ExerciseLibraryManager.jsx
     HistoryView.jsx     Logged workouts, tap a row for full detail
     ActiveWorkout.jsx
+    WorkoutSummary.jsx  Post-workout recap (duration, volume, sets, PRs)
     DashboardView.jsx   Progress dashboard (Quick Read + charts + recent workouts)
     SettingsView.jsx    Theme toggle, workout-history JSON import/export
 ```

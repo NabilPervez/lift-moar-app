@@ -64,6 +64,80 @@ export function fmtDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
 }
 
+export function formatDuration(ms) {
+  if (ms == null || !Number.isFinite(ms)) return '—'
+  const totalMin = Math.max(1, Math.round(ms / 60000))
+  if (totalMin < 60) return `${totalMin} min`
+  const h = Math.floor(totalMin / 60)
+  const m = totalMin % 60
+  return m ? `${h}h ${m}m` : `${h}h`
+}
+
+const epley = (w, r) => w * (1 + r / 30)
+
+/** Best estimated 1-rep-max across an exercise entry's completed sets. */
+export function bestE1RM(entryEx) {
+  let best = 0
+  for (const s of entryEx.sets || []) {
+    if (!s.completed) continue
+    const w = toNum(s.weight)
+    const r = toNum(s.reps)
+    if (w > 0 && r > 0) best = Math.max(best, epley(w, r))
+  }
+  return best
+}
+
+/**
+ * Post-workout recap: duration, total volume, sets, PRs and a per-lift summary.
+ * `priorHistory` must NOT include the workout being summarised.
+ */
+export function computeWorkoutSummary(workout, priorHistory, startedAt) {
+  const durationMs = startedAt ? Date.now() - startedAt : null
+  let totalVolume = 0
+  let completedSets = 0
+  const prs = []
+  const lifts = []
+
+  for (const ex of workout.exercises) {
+    const done = (ex.sets || []).filter(
+      (s) => s.completed && toNum(s.weight) > 0 && toNum(s.reps) > 0,
+    )
+    completedSets += (ex.sets || []).filter((s) => s.completed).length
+    const vol = done.reduce((v, s) => v + toNum(s.weight) * toNum(s.reps), 0)
+    totalVolume += vol
+    const topSet = done.length
+      ? done.reduce((b, s) => (toNum(s.weight) >= toNum(b.weight) ? s : b))
+      : null
+    const top = topSet ? { weight: toNum(topSet.weight), reps: toNum(topSet.reps) } : null
+
+    if (done.length) {
+      lifts.push({ name: ex.name || '', sets: done.length, volume: Math.round(vol), topSet: top })
+    }
+
+    const thisBest = bestE1RM(ex)
+    if (thisBest > 0) {
+      let priorBest = 0
+      for (const w of priorHistory) {
+        for (const pe of w.exercises) {
+          if (pe.exerciseId === ex.exerciseId) priorBest = Math.max(priorBest, bestE1RM(pe))
+        }
+      }
+      if (priorBest > 0 && thisBest > priorBest * 1.001) {
+        prs.push({ name: ex.name || '', e1rm: Math.round(thisBest), topSet: top })
+      }
+    }
+  }
+
+  return {
+    name: workout.name,
+    durationMs,
+    totalVolume: Math.round(totalVolume),
+    completedSets,
+    prs,
+    lifts,
+  }
+}
+
 function sortedByDate(history) {
   return history.slice().sort((a, b) => new Date(a.date) - new Date(b.date))
 }
