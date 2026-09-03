@@ -3,8 +3,12 @@ import Pill from './Pill'
 
 export default function ExercisePickerModal({ exercises, onSelect, onClose, onCreateExercise, title }) {
   const [query, setQuery] = useState('')
-  const filtered = exercises.filter((e) =>
-    e.name.toLowerCase().includes(query.toLowerCase()),
+  const q = query.toLowerCase()
+  const filtered = exercises.filter(
+    (e) =>
+      e.name.toLowerCase().includes(q) ||
+      (e.equipment || '').toLowerCase().includes(q) ||
+      e.muscles.some((m) => m.toLowerCase().includes(q)),
   )
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60" onClick={onClose}>
@@ -27,7 +31,12 @@ export default function ExercisePickerModal({ exercises, onSelect, onClose, onCr
               onClick={() => onSelect(ex.id)}
               className="w-full text-left bg-surface-700 hover:bg-surface-600 rounded-xl p-3 tap"
             >
-              <div className="font-semibold">{ex.name}</div>
+              <div className="font-semibold">
+                {ex.name}
+                {ex.equipment && (
+                  <span className="text-gray-500 font-normal text-xs ml-2">{ex.equipment}</span>
+                )}
+              </div>
               <div className="flex flex-wrap gap-1 mt-1">
                 {ex.muscles.map((m) => (
                   <Pill key={m} label={m} styleKey={m} small />

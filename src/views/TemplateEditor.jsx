@@ -117,9 +117,12 @@ export default function TemplateEditor({ template, exercises, onSave, onCancel, 
                       onChange={(e) => updateField(idx, 'rest', Number(e.target.value))}
                       className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
                     >
+                      <option value={30}>30s</option>
+                      <option value={45}>45s</option>
                       <option value={60}>60s</option>
                       <option value={90}>90s</option>
                       <option value={120}>120s</option>
+                      <option value={150}>150s</option>
                     </select>
                   </div>
                 </div>

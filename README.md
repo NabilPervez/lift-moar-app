@@ -9,9 +9,10 @@ Live: https://lift-moar.netlify.app/
 ## Stack
 
 - [Vite](https://vite.dev/) + React 18
-- Tailwind CSS 3
+- Tailwind CSS 3, CSS-variable-driven dark/light theming
 - [Chart.js](https://www.chartjs.org/) via `react-chartjs-2` (Progress dashboard)
 - All data is stored locally in the browser (`localStorage`) — no backend
+- ~155-exercise starter library + a ready-made Upper/Lower/Bodyweight plan
 
 ## Getting started
 
@@ -44,37 +45,50 @@ src/
   App.jsx               Root component: state, persistence, view routing
   index.css             Tailwind layers + global styles
   lib/
-    storage.js          localStorage helpers + LS_KEYS
+    storage.js          localStorage helpers, LS_KEYS, SCHEMA_VERSION
+    migrations.js        One-time data migration (folds new defaults into old installs)
+    theme.js             Dark/light theme persistence + <html data-theme> application
     constants.js        DAYS, MUSCLES, MUSCLE_STYLE
-    exercises.js        Default exercise library, templates, schedule
+    exercises.js        Exercise library, provided templates, weekly schedule
     audio.js            Rest-timer chime + time formatting
     analytics.js        Progress dashboard data derivation
   components/
-    BottomNav.jsx       Primary tab bar (Schedule / Templates / History / Progress)
+    BottomNav.jsx       Primary tab bar (Schedule / Templates / Progress / Settings)
     Header.jsx
     Pill.jsx            Muscle-group chip
     RestTimer.jsx
     ExercisePickerModal.jsx
     NewExerciseModal.jsx
     SwapModal.jsx
+    WorkoutDetailModal.jsx  Full set-by-set breakdown of one logged workout
   views/
     ScheduleView.jsx
     TemplatesView.jsx
     TemplateEditor.jsx
     ExerciseLibraryManager.jsx
-    HistoryView.jsx
+    HistoryView.jsx     Logged workouts, tap a row for full detail
     ActiveWorkout.jsx
-    DashboardView.jsx   Progress dashboard (Quick Read + charts)
+    DashboardView.jsx   Progress dashboard (Quick Read + charts + recent workouts)
+    SettingsView.jsx    Theme toggle, workout-history JSON import/export
 ```
 
 ## Data model (localStorage)
 
 | Key                 | Contents                                        |
 | ------------------- | ---------------------------------------------- |
-| `flt_exercises_v1`  | Exercise library (`{id, name, muscles[]}`)     |
+| `flt_exercises_v1`  | Exercise library (`{id, name, equipment, muscles[]}`) |
 | `flt_templates_v1`  | Workout templates                              |
 | `flt_schedule_v1`   | Day → template id map                          |
 | `flt_history_v1`    | Completed workouts (source for the dashboard)  |
+| `flt_settings_v1`   | `{ theme }`                                    |
+| `flt_schema_v`      | Migration schema version                       |
+
+## History & Settings
+
+- The **History** list is reached from the Progress tab ("View all") or Settings.
+  Tapping any workout opens a set-by-set breakdown — weight, reps and RPE per set.
+- **Settings** has a dark/light theme toggle and JSON **export / import** of the
+  full workout history (import replaces the current history after a confirm).
 
 ## Progress dashboard
 

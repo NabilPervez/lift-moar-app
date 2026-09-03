@@ -11,6 +11,9 @@ import {
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import Header from '../components/Header'
+import Pill from '../components/Pill'
+import WorkoutDetailModal from '../components/WorkoutDetailModal'
+import { exById } from '../lib/exercises'
 import {
   muscleGroupVolumeSeries,
   upperBodyProgressionSeries,
@@ -30,35 +33,40 @@ const TONE = {
 }
 const TONE_LABEL = { good: 'GOOD', watch: 'WATCH', flag: 'FLAG' }
 
-const baseOptions = (opts = {}) => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'index', intersect: false },
-  plugins: {
-    legend: {
-      display: opts.legend !== false,
-      labels: { color: '#9ca3af', font: { size: 11 }, boxWidth: 10, usePointStyle: true },
+const chartTheme = (theme) =>
+  theme === 'light'
+    ? { grid: 'rgba(15,23,42,0.08)', tick: '#64748b', legend: '#475569', ttBg: '#ffffff', ttBorder: '#e2e8f0', ttTitle: '#0f172a', ttBody: '#334155' }
+    : { grid: 'rgba(255,255,255,0.05)', tick: '#6b7280', legend: '#9ca3af', ttBg: '#1a2233', ttBorder: '#232d42', ttTitle: '#f3f4f6', ttBody: '#d1d5db' }
+
+const baseOptions = (theme, opts = {}) => {
+  const c = chartTheme(theme)
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        display: opts.legend !== false,
+        labels: { color: c.legend, font: { size: 11 }, boxWidth: 10, usePointStyle: true },
+      },
+      tooltip: {
+        backgroundColor: c.ttBg,
+        borderColor: c.ttBorder,
+        borderWidth: 1,
+        titleColor: c.ttTitle,
+        bodyColor: c.ttBody,
+      },
     },
-    tooltip: {
-      backgroundColor: '#1a2233',
-      borderColor: '#232d42',
-      borderWidth: 1,
-      titleColor: '#f3f4f6',
-      bodyColor: '#d1d5db',
+    scales: {
+      x: { grid: { color: c.grid }, ticks: { color: c.tick, font: { size: 10 } } },
+      y: {
+        grid: { color: c.grid },
+        ticks: { color: c.tick, font: { size: 10 } },
+        beginAtZero: opts.beginAtZero !== false,
+      },
     },
-  },
-  scales: {
-    x: {
-      grid: { color: 'rgba(255,255,255,0.05)' },
-      ticks: { color: '#6b7280', font: { size: 10 } },
-    },
-    y: {
-      grid: { color: 'rgba(255,255,255,0.05)' },
-      ticks: { color: '#6b7280', font: { size: 10 } },
-      beginAtZero: opts.beginAtZero !== false,
-    },
-  },
-})
+  }
+}
 
 function toLineData({ labels, datasets }) {
   return {
@@ -93,19 +101,14 @@ function ChartCard({ title, subtitle, empty, children }) {
   )
 }
 
-export default function DashboardView({ history, exercises }) {
+export default function DashboardView({ history, exercises, theme, onOpenHistory }) {
   const reads = useMemo(() => quickRead(history, exercises), [history, exercises])
-  const muscleVol = useMemo(
-    () => muscleGroupVolumeSeries(history, exercises),
-    [history, exercises],
-  )
-  const upper = useMemo(
-    () => upperBodyProgressionSeries(history, exercises),
-    [history, exercises],
-  )
+  const muscleVol = useMemo(() => muscleGroupVolumeSeries(history, exercises), [history, exercises])
+  const upper = useMemo(() => upperBodyProgressionSeries(history, exercises), [history, exercises])
   const options = useMemo(() => exerciseHistoryOptions(history, exercises), [history, exercises])
 
   const [selected, setSelected] = useState(null)
+  const [detail, setDetail] = useState(null)
   const selectedId = selected || (options[0] && options[0].id) || null
   const specific = useMemo(
     () => (selectedId ? specificLiftSeries(history, exercises, selectedId) : null),
@@ -116,6 +119,7 @@ export default function DashboardView({ history, exercises }) {
   const hasHistory = history.length > 0
   const muscleVolHasData = muscleVol.datasets.some((d) => d.data.some((v) => v > 0))
   const specificHasData = specific && specific.data.some((v) => v !== null)
+  const recent = history.slice().reverse().slice(0, 5)
 
   return (
     <div className="pb-28">
@@ -132,9 +136,7 @@ export default function DashboardView({ history, exercises }) {
             {reads.map((r, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <span
-                  className={`mt-0.5 flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ring-1 ${
-                    TONE[r.tone]
-                  }`}
+                  className={`mt-0.5 flex-shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold ring-1 ${TONE[r.tone]}`}
                 >
                   {TONE_LABEL[r.tone]}
                 </span>
@@ -159,20 +161,16 @@ export default function DashboardView({ history, exercises }) {
                 : null
           }
         >
-          <Line data={toLineData(muscleVol)} options={baseOptions()} />
+          <Line data={toLineData(muscleVol)} options={baseOptions(theme)} />
         </ChartCard>
 
         {/* Upper Body Lift Progression */}
         <ChartCard
           title="Upper Body Lift Progression"
           subtitle="Heaviest working weight (lbs) per session — rows, curls, shrugs, overhead press"
-          empty={
-            upper.datasets.length === 0
-              ? 'No matching upper-body lifts logged yet.'
-              : null
-          }
+          empty={upper.datasets.length === 0 ? 'No matching upper-body lifts logged yet.' : null}
         >
-          <Line data={toLineData(upper)} options={baseOptions({ beginAtZero: false })} />
+          <Line data={toLineData(upper)} options={baseOptions(theme, { beginAtZero: false })} />
         </ChartCard>
 
         {/* Specific Lift Progression */}
@@ -207,12 +205,71 @@ export default function DashboardView({ history, exercises }) {
                   labels: specific.labels,
                   datasets: [{ label: selectedName, data: specific.data }],
                 })}
-                options={baseOptions({ legend: false, beginAtZero: false })}
+                options={baseOptions(theme, { legend: false, beginAtZero: false })}
               />
             </div>
           )}
         </div>
+
+        {/* Recent Workouts */}
+        <div className="bg-surface-800 rounded-2xl p-4 border border-white/5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-bold">Recent Workouts</div>
+            {history.length > recent.length && (
+              <button
+                onClick={onOpenHistory}
+                className="text-xs font-semibold text-blue-400 hover:text-blue-300 tap px-1"
+              >
+                View all ({history.length}) →
+              </button>
+            )}
+          </div>
+          {recent.length === 0 ? (
+            <p className="text-gray-600 italic text-sm py-4 text-center">No workouts logged yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {recent.map((w, i) => {
+                const sets = w.exercises.reduce(
+                  (s, e) => s + e.sets.filter((x) => x.completed).length,
+                  0,
+                )
+                const muscles = Array.from(
+                  new Set(
+                    w.exercises.flatMap(
+                      (e) => (exById(exercises, e.exerciseId) || { muscles: e.muscles || [] }).muscles || [],
+                    ),
+                  ),
+                ).slice(0, 4)
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setDetail(w)}
+                    className="w-full text-left bg-surface-700 rounded-xl p-3 tap active:scale-[0.99] transition-transform"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-sm">{w.name}</div>
+                      <div className="text-gray-500 text-xs num">
+                        {new Date(w.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        {' · '}
+                        {sets} sets
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {muscles.map((m) => (
+                        <Pill key={m} label={m} styleKey={m} small />
+                      ))}
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
+
+      {detail && (
+        <WorkoutDetailModal workout={detail} exercises={exercises} onClose={() => setDetail(null)} />
+      )}
     </div>
   )
 }

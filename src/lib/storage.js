@@ -3,7 +3,12 @@ export const LS_KEYS = {
   templates: 'flt_templates_v1',
   schedule: 'flt_schedule_v1',
   history: 'flt_history_v1',
+  settings: 'flt_settings_v1',
+  schema: 'flt_schema_v',
 }
+
+// Bump when makeDefault* content changes in a way existing installs should pick up.
+export const SCHEMA_VERSION = 2
 
 export function loadLS(key, fallback) {
   try {

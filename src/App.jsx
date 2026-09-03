@@ -7,6 +7,7 @@ import TemplateEditor from './views/TemplateEditor'
 import ExerciseLibraryManager from './views/ExerciseLibraryManager'
 import HistoryView from './views/HistoryView'
 import DashboardView from './views/DashboardView'
+import SettingsView from './views/SettingsView'
 import ActiveWorkout from './views/ActiveWorkout'
 import { LS_KEYS, loadLS, saveLS } from './lib/storage'
 import {
@@ -15,28 +16,36 @@ import {
   makeDefaultSchedule,
   makeDefaultTemplates,
 } from './lib/exercises'
+import { applyTheme, getStoredTheme, saveTheme } from './lib/theme'
 
 export default function App() {
   const [exercises, setExercises] = useState(() => loadLS(LS_KEYS.exercises, DEFAULT_EXERCISES))
   const [templates, setTemplates] = useState(
     () => loadLS(LS_KEYS.templates, null) || makeDefaultTemplates(),
   )
-  const [schedule, setSchedule] = useState(() => {
-    const t = loadLS(LS_KEYS.templates, null) || makeDefaultTemplates()
-    return loadLS(LS_KEYS.schedule, null) || makeDefaultSchedule(t)
-  })
+  const [schedule, setSchedule] = useState(
+    () => loadLS(LS_KEYS.schedule, null) || makeDefaultSchedule(),
+  )
   const [history, setHistory] = useState(() => loadLS(LS_KEYS.history, []))
+  const [theme, setThemeState] = useState(getStoredTheme)
 
   const [view, setView] = useState('schedule')
   const [editingTemplate, setEditingTemplate] = useState(undefined)
   const [managingExercises, setManagingExercises] = useState(false)
   const [creatingExerciseFromPicker, setCreatingExerciseFromPicker] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [activeWorkout, setActiveWorkout] = useState(null)
 
   useEffect(() => saveLS(LS_KEYS.exercises, exercises), [exercises])
   useEffect(() => saveLS(LS_KEYS.templates, templates), [templates])
   useEffect(() => saveLS(LS_KEYS.schedule, schedule), [schedule])
   useEffect(() => saveLS(LS_KEYS.history, history), [history])
+
+  const setTheme = (t) => {
+    setThemeState(t)
+    applyTheme(t)
+    saveTheme(t)
+  }
 
   const startWorkout = (template) => {
     const initExercises = template.exercises.map((item) => {
@@ -97,6 +106,14 @@ export default function App() {
     )
   }
 
+  if (showHistory) {
+    return (
+      <div className="max-w-md mx-auto min-h-screen">
+        <HistoryView history={history} exercises={exercises} onBack={() => setShowHistory(false)} />
+      </div>
+    )
+  }
+
   if (managingExercises) {
     return (
       <ExerciseLibraryManager
@@ -153,8 +170,23 @@ export default function App() {
           onManageExercises={() => setManagingExercises(true)}
         />
       )}
-      {view === 'history' && <HistoryView history={history} exercises={exercises} />}
-      {view === 'dashboard' && <DashboardView history={history} exercises={exercises} />}
+      {view === 'dashboard' && (
+        <DashboardView
+          history={history}
+          exercises={exercises}
+          theme={theme}
+          onOpenHistory={() => setShowHistory(true)}
+        />
+      )}
+      {view === 'settings' && (
+        <SettingsView
+          theme={theme}
+          setTheme={setTheme}
+          history={history}
+          setHistory={setHistory}
+          onOpenHistory={() => setShowHistory(true)}
+        />
+      )}
       <BottomNav view={view} setView={setView} />
     </div>
   )

@@ -2,8 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { background-color: #0a0f1a; overscroll-behavior-y: none; }
-body { color: #f3f4f6; font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+/* ============================== THEME TOKENS ============================== */
+:root {
+  --surface: 10 15 26;      /* #0a0f1a page */
+  --surface-800: 18 24 38;  /* #121826 cards */
+  --surface-700: 26 34 51;  /* #1a2233 inputs */
+  --surface-600: 35 45 66;  /* #232d42 */
+  --fg: 243 244 246;        /* #f3f4f6 body text */
+}
+
+:root[data-theme='light'] {
+  --surface: 240 244 248;   /* #f0f4f8 page */
+  --surface-800: 255 255 255;
+  --surface-700: 241 245 249;
+  --surface-600: 226 232 240;
+  --fg: 30 41 59;           /* #1e293b */
+}
+
+html, body { background-color: rgb(var(--surface)); overscroll-behavior-y: none; }
+body { color: rgb(var(--fg)); font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
 * { -webkit-user-select: none; user-select: none; }
 input, textarea { -webkit-user-select: text; user-select: text; }
 input[type="number"] { -moz-appearance: textfield; font-family: 'JetBrains Mono', monospace; }
@@ -23,3 +40,37 @@ input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; marg
 .pop-in { animation: popIn 180ms cubic-bezier(0.16, 1, 0.3, 1); }
 .ring-progress { transition: stroke-dashoffset 1s linear; }
 button, .tap { min-height: 44px; min-width: 44px; }
+
+/* ============================== LIGHT-MODE UTILITY REMAPS ==============================
+   The components are authored dark-first with literal Tailwind color utilities.
+   Under the light theme we remap the neutral text/border/fill utilities and the
+   pale accent text so everything stays legible on a white surface. Accent
+   backgrounds (blue-600 buttons, muscle pills at /15) already read fine. */
+:root[data-theme='light'] .text-white { color: #0f172a; }
+:root[data-theme='light'] .text-gray-200 { color: #1e293b; }
+:root[data-theme='light'] .text-gray-300 { color: #334155; }
+:root[data-theme='light'] .text-gray-400 { color: #475569; }
+:root[data-theme='light'] .text-gray-500 { color: #64748b; }
+:root[data-theme='light'] .text-gray-600 { color: #94a3b8; }
+
+:root[data-theme='light'] .border-white\/5 { border-color: rgba(15, 23, 42, 0.08); }
+:root[data-theme='light'] .border-white\/10 { border-color: rgba(15, 23, 42, 0.12); }
+:root[data-theme='light'] .border-white\/20 { border-color: rgba(15, 23, 42, 0.18); }
+:root[data-theme='light'] .bg-white\/5 { background-color: rgba(15, 23, 42, 0.04); }
+:root[data-theme='light'] .hover\:bg-white\/5:hover { background-color: rgba(15, 23, 42, 0.06); }
+
+/* accent + pill text darkened for white backgrounds */
+:root[data-theme='light'] .text-blue-400 { color: #2563eb; }
+:root[data-theme='light'] .text-blue-300 { color: #1d4ed8; }
+:root[data-theme='light'] .text-emerald-400 { color: #059669; }
+:root[data-theme='light'] .text-emerald-300 { color: #047857; }
+:root[data-theme='light'] .text-red-400 { color: #dc2626; }
+:root[data-theme='light'] .text-red-300 { color: #b91c1c; }
+:root[data-theme='light'] .text-rose-300 { color: #be123c; }
+:root[data-theme='light'] .text-amber-300 { color: #b45309; }
+:root[data-theme='light'] .text-cyan-300 { color: #0e7490; }
+:root[data-theme='light'] .text-violet-300 { color: #6d28d9; }
+:root[data-theme='light'] .text-orange-300 { color: #c2410c; }
+:root[data-theme='light'] .text-pink-300 { color: #be185d; }
+:root[data-theme='light'] .text-fuchsia-300 { color: #a21caf; }
+:root[data-theme='light'] .text-teal-300 { color: #0f766e; }

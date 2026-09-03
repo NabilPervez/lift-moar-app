@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { MUSCLES, MUSCLE_STYLE } from '../lib/constants'
+import { EQUIPMENT } from '../lib/exercises'
 import { uid } from '../lib/storage'
 
 export default function NewExerciseModal({ onCreate, onClose }) {
   const [name, setName] = useState('')
+  const [equipment, setEquipment] = useState('Other')
   const [muscles, setMuscles] = useState([])
   const toggle = (m) =>
     setMuscles((ms) => (ms.includes(m) ? ms.filter((x) => x !== m) : [...ms, m]))
@@ -20,8 +22,22 @@ export default function NewExerciseModal({ onCreate, onClose }) {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Exercise name"
-          className="w-full bg-surface-700 rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full bg-surface-700 rounded-xl px-4 py-3 mb-3 outline-none focus:ring-2 focus:ring-blue-500"
         />
+        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          Equipment
+        </div>
+        <select
+          value={equipment}
+          onChange={(e) => setEquipment(e.target.value)}
+          className="w-full bg-surface-700 rounded-xl px-4 py-3 mb-4 outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          {EQUIPMENT.map((eq) => (
+            <option key={eq} value={eq}>
+              {eq}
+            </option>
+          ))}
+        </select>
         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
           Target muscles
         </div>
@@ -44,7 +60,7 @@ export default function NewExerciseModal({ onCreate, onClose }) {
         </div>
         <button
           disabled={!canSave}
-          onClick={() => onCreate({ id: uid('ex'), name: name.trim(), muscles })}
+          onClick={() => onCreate({ id: uid('ex'), name: name.trim(), equipment, muscles })}
           className={`w-full font-bold py-4 rounded-xl ${
             canSave ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'bg-surface-700 text-gray-600'
           }`}

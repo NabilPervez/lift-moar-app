@@ -1,11 +1,15 @@
+import { useState } from 'react'
 import Header from '../components/Header'
 import Pill from '../components/Pill'
+import WorkoutDetailModal from '../components/WorkoutDetailModal'
 import { exById } from '../lib/exercises'
 
-export default function HistoryView({ history, exercises }) {
+export default function HistoryView({ history, exercises, onBack }) {
+  const [detail, setDetail] = useState(null)
+
   return (
     <div className="pb-28">
-      <Header title="History" subtitle={`${history.length} workouts logged`} />
+      <Header title="History" subtitle={`${history.length} workouts logged`} onBack={onBack} />
       <div className="px-4 space-y-3">
         {history.length === 0 ? (
           <p className="text-gray-500 italic">No workouts logged yet.</p>
@@ -29,7 +33,11 @@ export default function HistoryView({ history, exercises }) {
                 ),
               )
               return (
-                <div key={i} className="bg-surface-800 p-4 rounded-2xl border border-white/5">
+                <button
+                  key={i}
+                  onClick={() => setDetail(w)}
+                  className="w-full text-left bg-surface-800 p-4 rounded-2xl border border-white/5 tap active:scale-[0.99] transition-transform"
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-bold text-lg">{w.name}</div>
@@ -51,11 +59,15 @@ export default function HistoryView({ history, exercises }) {
                       <Pill key={m} label={m} styleKey={m} small />
                     ))}
                   </div>
-                </div>
+                </button>
               )
             })
         )}
       </div>
+
+      {detail && (
+        <WorkoutDetailModal workout={detail} exercises={exercises} onClose={() => setDetail(null)} />
+      )}
     </div>
   )
 }

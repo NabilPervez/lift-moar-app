@@ -1,8 +1,8 @@
 const ITEMS = [
   { key: 'schedule', label: 'Schedule', icon: '▦' },
   { key: 'templates', label: 'Templates', icon: '☰' },
-  { key: 'history', label: 'History', icon: '⏱' },
   { key: 'dashboard', label: 'Progress', icon: '↗' },
+  { key: 'settings', label: 'Settings', icon: '⚙' },
 ]
 
 export default function BottomNav({ view, setView }) {

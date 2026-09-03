@@ -8,11 +8,13 @@ export default {
         mono: ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
+        // Driven by CSS variables so the light/dark theme can swap them
+        // (and Tailwind's `/opacity` modifiers still work).
         surface: {
-          DEFAULT: '#0a0f1a',
-          800: '#121826',
-          700: '#1a2233',
-          600: '#232d42',
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          800: 'rgb(var(--surface-800) / <alpha-value>)',
+          700: 'rgb(var(--surface-700) / <alpha-value>)',
+          600: 'rgb(var(--surface-600) / <alpha-value>)',
         },
       },
     },
