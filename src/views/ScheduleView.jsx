@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import Header from '../components/Header'
-import Pill from '../components/Pill'
+import TargetingBars from '../components/TargetingBars'
 import { DAYS } from '../lib/constants'
-import { exById } from '../lib/exercises'
+import { muscleLoad } from '../lib/exercises'
 
 export default function ScheduleView({ schedule, templates, exercises, onAssign, onStart }) {
   const [pickerDay, setPickerDay] = useState(null)
@@ -16,15 +16,10 @@ export default function ScheduleView({ schedule, templates, exercises, onAssign,
           const tmplId = schedule[day]
           const tmpl = tmplId ? templates.find((t) => t.id === tmplId) : null
           const isToday = day === todayName
-          const muscleSet = tmpl
-            ? Array.from(
-                new Set(
-                  tmpl.exercises.flatMap(
-                    (e) => (exById(exercises, e.exerciseId) || { muscles: [] }).muscles,
-                  ),
-                ),
-              )
-            : []
+          const load = tmpl ? muscleLoad(tmpl.exercises, exercises) : []
+          const totalSets = tmpl
+            ? tmpl.exercises.reduce((s, e) => s + (Number(e.targetSets) || 0), 0)
+            : 0
           return (
             <div
               key={day}
@@ -56,15 +51,14 @@ export default function ScheduleView({ schedule, templates, exercises, onAssign,
               </div>
               {tmpl ? (
                 <div>
-                  <div className="font-bold text-lg mb-2">{tmpl.name}</div>
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {muscleSet.slice(0, 5).map((m) => (
-                      <Pill key={m} label={m} styleKey={m} small />
-                    ))}
+                  <div className="font-bold text-lg">{tmpl.name}</div>
+                  <div className="text-gray-500 text-xs mb-3">
+                    {tmpl.exercises.length} exercises · {totalSets} sets
                   </div>
+                  <TargetingBars items={load} limit={5} labelWidth="w-16" />
                   <button
                     onClick={() => onStart(tmpl)}
-                    className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-transform text-white font-bold py-3 rounded-xl"
+                    className="w-full mt-3 bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-transform text-white font-bold py-3 rounded-xl"
                   >
                     Start Workout
                   </button>

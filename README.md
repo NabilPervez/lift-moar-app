@@ -9,8 +9,10 @@ Live: https://lift-moar.netlify.app/
 ## Stack
 
 - [Vite](https://vite.dev/) + React 18
+- Installable **PWA** (`vite-plugin-pwa` / Workbox) — offline-capable, add-to-home-screen
 - Tailwind CSS 3, CSS-variable-driven dark/light theming
 - [Chart.js](https://www.chartjs.org/) via `react-chartjs-2` (Progress dashboard)
+- [dnd-kit](https://dndkit.com/) — drag-to-reorder exercises mid-workout (touch + mouse)
 - All data is stored locally in the browser (`localStorage`) — no backend
 - ~155-exercise starter library + a ready-made Upper/Lower/Bodyweight plan
 - First-run onboarding walkthrough + a generated sample training block
@@ -36,6 +38,19 @@ Configured in `netlify.toml`:
 - Build command: `npm run build`
 - Publish directory: `dist`
 - SPA redirect: all routes → `/index.html`
+
+The service worker only registers over HTTPS (or localhost), so installability /
+offline support kicks in on the deployed site, not in a plain `file://` preview.
+
+## PWA icons
+
+`public/` holds the generated barbell icons (`pwa-192/512`, maskable variants,
+`apple-touch-icon`, `favicon-16/32`, `favicon.svg`). Regenerate them from the
+mark with:
+
+```bash
+node scripts/generate-icons.mjs   # needs the `sharp` devDependency
+```
 
 ## Project structure
 

@@ -163,6 +163,22 @@ export const DEFAULT_EXERCISES = [
 export const exById = (list, id) => list.find((e) => e.id === id)
 
 /**
+ * Count how many exercises in a list target each muscle.
+ * `refs` items only need an `exerciseId` (falls back to a `muscles` array).
+ * Returns a [muscle, count] array sorted most-hit first.
+ */
+export function muscleLoad(refs, exercises) {
+  const counts = {}
+  for (const r of refs) {
+    const meta = exById(exercises, r.exerciseId) || { muscles: r.muscles || [] }
+    for (const m of meta.muscles || r.muscles || []) {
+      counts[m] = (counts[m] || 0) + 1
+    }
+  }
+  return Object.entries(counts).sort((a, b) => b[1] - a[1])
+}
+
+/**
  * Provided training templates (from the user's coaching plan docs).
  * Template exercise shape: { exerciseId, targetSets, reps, rest }
  * `reps` is the low end of the doc's rep range; `rest` is in seconds.
