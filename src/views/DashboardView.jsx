@@ -12,6 +12,7 @@ import {
 import { Line } from 'react-chartjs-2'
 import Header from '../components/Header'
 import Pill from '../components/Pill'
+import ConfirmButton from '../components/ConfirmButton'
 import WorkoutDetailModal from '../components/WorkoutDetailModal'
 import { exById } from '../lib/exercises'
 import {
@@ -101,7 +102,7 @@ function ChartCard({ title, subtitle, empty, children }) {
   )
 }
 
-export default function DashboardView({ history, exercises, theme, onOpenHistory }) {
+export default function DashboardView({ history, exercises, theme, onOpenHistory, onDeleteWorkout }) {
   const reads = useMemo(() => quickRead(history, exercises), [history, exercises])
   const muscleVol = useMemo(() => muscleGroupVolumeSeries(history, exercises), [history, exercises])
   const upper = useMemo(() => upperBodyProgressionSeries(history, exercises), [history, exercises])
@@ -241,25 +242,40 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
                   ),
                 ).slice(0, 4)
                 return (
-                  <button
-                    key={i}
-                    onClick={() => setDetail(w)}
-                    className="w-full text-left bg-surface-700 rounded-xl p-3 tap active:scale-[0.99] transition-transform"
+                  <div
+                    key={`${w.date}-${i}`}
+                    className="bg-surface-700 rounded-xl flex items-stretch overflow-hidden"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="font-semibold text-sm">{w.name}</div>
-                      <div className="text-gray-500 text-xs num">
-                        {new Date(w.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        {' · '}
-                        {sets} sets
+                    <button
+                      onClick={() => setDetail(w)}
+                      className="flex-1 text-left p-3 tap active:bg-white/5 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold text-sm">{w.name}</div>
+                        <div className="text-gray-500 text-xs num">
+                          {new Date(w.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          {' · '}
+                          {sets} sets
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {muscles.map((m) => (
-                        <Pill key={m} label={m} styleKey={m} small />
-                      ))}
-                    </div>
-                  </button>
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {muscles.map((m) => (
+                          <Pill key={m} label={m} styleKey={m} small />
+                        ))}
+                      </div>
+                    </button>
+                    {onDeleteWorkout && (
+                      <ConfirmButton
+                        ariaLabel={`Delete ${w.name}`}
+                        onConfirm={() => onDeleteWorkout(w)}
+                        confirmLabel="Delete?"
+                        className="tap w-11 flex items-center justify-center text-red-400 hover:bg-red-500/10 border-l border-white/5 flex-shrink-0"
+                        armedClassName="tap w-16 text-xs font-bold flex items-center justify-center text-white bg-red-600 border-l border-white/5 flex-shrink-0"
+                      >
+                        &#128465;
+                      </ConfirmButton>
+                    )}
+                  </div>
                 )
               })}
             </div>
@@ -268,7 +284,12 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
       </div>
 
       {detail && (
-        <WorkoutDetailModal workout={detail} exercises={exercises} onClose={() => setDetail(null)} />
+        <WorkoutDetailModal
+          workout={detail}
+          exercises={exercises}
+          onClose={() => setDetail(null)}
+          onDelete={onDeleteWorkout}
+        />
       )}
     </div>
   )

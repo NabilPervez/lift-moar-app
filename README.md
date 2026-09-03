@@ -13,6 +13,7 @@ Live: https://lift-moar.netlify.app/
 - [Chart.js](https://www.chartjs.org/) via `react-chartjs-2` (Progress dashboard)
 - All data is stored locally in the browser (`localStorage`) — no backend
 - ~155-exercise starter library + a ready-made Upper/Lower/Bodyweight plan
+- First-run onboarding walkthrough + a generated sample training block
 
 ## Getting started
 
@@ -46,21 +47,25 @@ src/
   index.css             Tailwind layers + global styles
   lib/
     storage.js          localStorage helpers, LS_KEYS, SCHEMA_VERSION
+    settings.js          get / patch the flt_settings_v1 object
     migrations.js        One-time data migration (folds new defaults into old installs)
     theme.js             Dark/light theme persistence + <html data-theme> application
     constants.js        DAYS, MUSCLES, MUSCLE_STYLE
     exercises.js        Exercise library, provided templates, weekly schedule
+    mockHistory.js      Generated ~10-week sample training block (fresh-install seed)
     audio.js            Rest-timer chime + time formatting
     analytics.js        Progress dashboard data derivation
   components/
     BottomNav.jsx       Primary tab bar (Schedule / Templates / Progress / Settings)
     Header.jsx
     Pill.jsx            Muscle-group chip
+    ConfirmButton.jsx   Two-tap button for destructive actions (no window.confirm)
+    Onboarding.jsx      First-run walkthrough (replayable from Settings)
     RestTimer.jsx
     ExercisePickerModal.jsx
     NewExerciseModal.jsx
     SwapModal.jsx
-    WorkoutDetailModal.jsx  Full set-by-set breakdown of one logged workout
+    WorkoutDetailModal.jsx  Full set-by-set breakdown + delete
   views/
     ScheduleView.jsx
     TemplatesView.jsx
@@ -80,15 +85,20 @@ src/
 | `flt_templates_v1`  | Workout templates                              |
 | `flt_schedule_v1`   | Day → template id map                          |
 | `flt_history_v1`    | Completed workouts (source for the dashboard)  |
-| `flt_settings_v1`   | `{ theme }`                                    |
+| `flt_settings_v1`   | `{ theme, onboarded }`                          |
 | `flt_schema_v`      | Migration schema version                       |
+
+A fresh install (no stored history) starts seeded with the generated sample
+block from `mockHistory.js`; existing installs keep their real data.
 
 ## History & Settings
 
 - The **History** list is reached from the Progress tab ("View all") or Settings.
   Tapping any workout opens a set-by-set breakdown — weight, reps and RPE per set.
-- **Settings** has a dark/light theme toggle and JSON **export / import** of the
-  full workout history (import replaces the current history after a confirm).
+- Delete a single workout from its detail view or the trash control on any
+  History / Recent Workouts row (two-tap confirm, no browser dialog).
+- **Settings**: dark/light theme, JSON **export / import** of the full history,
+  **load sample data**, and a **Danger zone** "Delete all workout history".
 
 ## Progress dashboard
 

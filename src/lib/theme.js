@@ -1,16 +1,15 @@
-import { LS_KEYS, loadLS, saveLS } from './storage'
+import { getSettings, patchSettings } from './settings'
 
 export const THEMES = ['dark', 'light']
 const DEFAULT_THEME = 'dark'
 
 export function getStoredTheme() {
-  const s = loadLS(LS_KEYS.settings, null)
-  return s && THEMES.includes(s.theme) ? s.theme : DEFAULT_THEME
+  const t = getSettings().theme
+  return THEMES.includes(t) ? t : DEFAULT_THEME
 }
 
 export function saveTheme(theme) {
-  const s = loadLS(LS_KEYS.settings, {}) || {}
-  saveLS(LS_KEYS.settings, { ...s, theme })
+  patchSettings({ theme })
 }
 
 export function applyTheme(theme) {

@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import Header from '../components/Header'
+import ConfirmButton from '../components/ConfirmButton'
 
 const EXPORT_VERSION = 1
 
@@ -25,9 +26,19 @@ function normalizeImport(parsed) {
   return clean
 }
 
-export default function SettingsView({ theme, setTheme, history, setHistory, onOpenHistory }) {
+export default function SettingsView({
+  theme,
+  setTheme,
+  history,
+  setHistory,
+  onOpenHistory,
+  onLoadSample,
+  onClearHistory,
+  onReplayIntro,
+}) {
   const fileRef = useRef(null)
   const [msg, setMsg] = useState(null)
+  const [pendingImport, setPendingImport] = useState(null)
 
   const flash = (text, tone = 'ok') => {
     setMsg({ text, tone })
@@ -54,17 +65,18 @@ export default function SettingsView({ theme, setTheme, history, setHistory, onO
     if (!file) return
     try {
       const text = await file.text()
-      const workouts = normalizeImport(JSON.parse(text))
-      const ok = window.confirm(
-        `Import ${workouts.length} workout${workouts.length === 1 ? '' : 's'}? ` +
-          `This replaces your current history (${history.length}).`,
-      )
-      if (!ok) return
-      setHistory(workouts)
-      flash(`Imported ${workouts.length} workout${workouts.length === 1 ? '' : 's'}.`)
+      setPendingImport(normalizeImport(JSON.parse(text)))
+      setMsg(null)
     } catch (err) {
       flash(err.message || 'Could not read that file.', 'err')
     }
+  }
+
+  const applyImport = () => {
+    const n = pendingImport.length
+    setHistory(pendingImport)
+    setPendingImport(null)
+    flash(`Imported ${n} workout${n === 1 ? '' : 's'}.`)
   }
 
   return (
@@ -128,6 +140,23 @@ export default function SettingsView({ theme, setTheme, history, setHistory, onO
               <div className="font-semibold">Import history (JSON)</div>
               <div className="text-gray-500 text-sm">Replace history from a previously exported file</div>
             </button>
+            <div className="px-4 py-4">
+              <div className="font-semibold">Load sample data</div>
+              <div className="text-gray-500 text-sm mb-2">
+                Replace history with the demo training block
+              </div>
+              <ConfirmButton
+                onConfirm={() => {
+                  const n = onLoadSample()
+                  flash(`Loaded ${n} sample workout${n === 1 ? '' : 's'}.`)
+                }}
+                confirmLabel={`Replace ${history.length} workout${history.length === 1 ? '' : 's'}? Tap again`}
+                className="tap text-sm font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-4 py-2.5 rounded-xl"
+                armedClassName="tap text-sm font-bold text-white bg-blue-600 px-4 py-2.5 rounded-xl"
+              >
+                Load sample data
+              </ConfirmButton>
+            </div>
           </div>
           <input
             ref={fileRef}
@@ -136,6 +165,28 @@ export default function SettingsView({ theme, setTheme, history, setHistory, onO
             onChange={onPickFile}
             className="hidden"
           />
+          {pendingImport && (
+            <div className="mt-2 bg-surface-800 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
+              <div className="text-sm">
+                Replace <span className="font-bold num">{history.length}</span> with{' '}
+                <span className="font-bold num">{pendingImport.length}</span> imported?
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setPendingImport(null)}
+                  className="tap text-xs font-bold text-gray-400 px-3 py-2 rounded-lg bg-surface-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={applyImport}
+                  className="tap text-xs font-bold text-white px-3 py-2 rounded-lg bg-blue-600"
+                >
+                  Replace
+                </button>
+              </div>
+            </div>
+          )}
           {msg && (
             <p
               className={`text-sm mt-2 font-medium ${
@@ -145,6 +196,37 @@ export default function SettingsView({ theme, setTheme, history, setHistory, onO
               {msg.text}
             </p>
           )}
+        </section>
+
+        {/* About */}
+        <section>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">About</div>
+          <div className="bg-surface-800 rounded-2xl border border-white/5">
+            <button onClick={onReplayIntro} className="w-full text-left px-4 py-4 tap">
+              <div className="font-semibold">Replay the intro</div>
+              <div className="text-gray-500 text-sm">See the walkthrough of how the app works</div>
+            </button>
+          </div>
+        </section>
+
+        {/* Danger zone */}
+        <section>
+          <div className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-2">
+            Danger zone
+          </div>
+          <div className="bg-surface-800 rounded-2xl border border-red-500/20 p-4">
+            <ConfirmButton
+              onConfirm={() => {
+                onClearHistory()
+                flash('All workout history deleted.')
+              }}
+              confirmLabel={`Delete all ${history.length}? Tap again to confirm`}
+              className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold py-3 rounded-xl tap"
+              armedClassName="w-full bg-red-600 text-white font-bold py-3 rounded-xl tap"
+            >
+              Delete all workout history
+            </ConfirmButton>
+          </div>
         </section>
       </div>
     </div>

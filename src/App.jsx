@@ -9,6 +9,7 @@ import HistoryView from './views/HistoryView'
 import DashboardView from './views/DashboardView'
 import SettingsView from './views/SettingsView'
 import ActiveWorkout from './views/ActiveWorkout'
+import Onboarding from './components/Onboarding'
 import { LS_KEYS, loadLS, saveLS } from './lib/storage'
 import {
   DEFAULT_EXERCISES,
@@ -16,7 +17,9 @@ import {
   makeDefaultSchedule,
   makeDefaultTemplates,
 } from './lib/exercises'
+import { DEFAULT_HISTORY } from './lib/mockHistory'
 import { applyTheme, getStoredTheme, saveTheme } from './lib/theme'
+import { getSettings, patchSettings } from './lib/settings'
 
 export default function App() {
   const [exercises, setExercises] = useState(() => loadLS(LS_KEYS.exercises, DEFAULT_EXERCISES))
@@ -26,8 +29,9 @@ export default function App() {
   const [schedule, setSchedule] = useState(
     () => loadLS(LS_KEYS.schedule, null) || makeDefaultSchedule(),
   )
-  const [history, setHistory] = useState(() => loadLS(LS_KEYS.history, []))
+  const [history, setHistory] = useState(() => loadLS(LS_KEYS.history, DEFAULT_HISTORY))
   const [theme, setThemeState] = useState(getStoredTheme)
+  const [onboarded, setOnboarded] = useState(() => !!getSettings().onboarded)
 
   const [view, setView] = useState('schedule')
   const [editingTemplate, setEditingTemplate] = useState(undefined)
@@ -72,6 +76,22 @@ export default function App() {
     setActiveWorkout(null)
   }
 
+  const deleteWorkout = (workout) => setHistory((h) => h.filter((w) => w !== workout))
+  const clearHistory = () => setHistory([])
+  const loadSampleHistory = () => {
+    setHistory(DEFAULT_HISTORY)
+    return DEFAULT_HISTORY.length
+  }
+
+  const finishOnboarding = () => {
+    setOnboarded(true)
+    patchSettings({ onboarded: true })
+  }
+  const replayOnboarding = () => {
+    setOnboarded(false)
+    patchSettings({ onboarded: false })
+  }
+
   const saveTemplate = (tmpl) => {
     setTemplates((ts) => {
       const exists = ts.some((t) => t.id === tmpl.id)
@@ -94,6 +114,10 @@ export default function App() {
   const createExercise = (ex) => setExercises((list) => [...list, ex])
   const deleteExercise = (id) => setExercises((list) => list.filter((e) => e.id !== id))
 
+  if (!onboarded) {
+    return <Onboarding onDone={finishOnboarding} />
+  }
+
   if (activeWorkout) {
     return (
       <ActiveWorkout
@@ -109,7 +133,12 @@ export default function App() {
   if (showHistory) {
     return (
       <div className="max-w-md mx-auto min-h-screen">
-        <HistoryView history={history} exercises={exercises} onBack={() => setShowHistory(false)} />
+        <HistoryView
+          history={history}
+          exercises={exercises}
+          onBack={() => setShowHistory(false)}
+          onDeleteWorkout={deleteWorkout}
+        />
       </div>
     )
   }
@@ -176,6 +205,7 @@ export default function App() {
           exercises={exercises}
           theme={theme}
           onOpenHistory={() => setShowHistory(true)}
+          onDeleteWorkout={deleteWorkout}
         />
       )}
       {view === 'settings' && (
@@ -185,6 +215,9 @@ export default function App() {
           history={history}
           setHistory={setHistory}
           onOpenHistory={() => setShowHistory(true)}
+          onLoadSample={loadSampleHistory}
+          onClearHistory={clearHistory}
+          onReplayIntro={replayOnboarding}
         />
       )}
       <BottomNav view={view} setView={setView} />

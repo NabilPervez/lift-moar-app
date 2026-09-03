@@ -83,7 +83,9 @@ export function muscleGroupVolumeSeries(history, exercises) {
         const ms = musclesFor(ex, exercises)
         if (ms.some((m) => targets.includes(m))) total += bestSetVolume(ex)
       }
-      return Math.round(total)
+      // null (not 0) on days the group wasn't trained, so each line connects
+      // its real sessions instead of sawtoothing down to the axis
+      return total > 0 ? Math.round(total) : null
     })
     return { label: group, data }
   })
@@ -168,32 +170,35 @@ export function quickRead(history, exercises) {
     return items
   }
 
+  const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length
+
   const { datasets } = muscleGroupVolumeSeries(history, exercises)
   for (const ds of datasets) {
     const series = ds.data.filter((v) => v > 0)
-    if (series.length < 2) continue
-    const last = series[series.length - 1]
-    const prior = series.slice(Math.max(0, series.length - 4), series.length - 1)
-    const avgPrior = prior.reduce((a, b) => a + b, 0) / prior.length
-    if (!avgPrior) continue
-    const change = (last - avgPrior) / avgPrior
-    if (change >= 0.05) {
+    if (series.length < 4) continue
+    // average the last 2 sessions vs the 3 before that, so a single
+    // heavy/light day (or a gym-vs-home swing) doesn't dominate
+    const recent = mean(series.slice(-2))
+    const baseline = mean(series.slice(-5, -2))
+    if (!baseline) continue
+    const change = (recent - baseline) / baseline
+    if (change >= 0.04) {
       items.push({
         tone: 'good',
         title: `${ds.label} volume climbing`,
-        detail: `Latest session is up ${Math.round(change * 100)}% vs the recent average.`,
+        detail: `Recent sessions are up ${Math.round(change * 100)}% vs the block before.`,
       })
-    } else if (change <= -0.1) {
+    } else if (change <= -0.12) {
       items.push({
         tone: 'flag',
-        title: `${ds.label} volume dropped`,
-        detail: `Latest session is down ${Math.round(-change * 100)}% vs the recent average.`,
+        title: `${ds.label} volume down`,
+        detail: `Recent sessions are down ${Math.round(-change * 100)}% vs the block before.`,
       })
     } else {
       items.push({
         tone: 'watch',
-        title: `${ds.label} plateauing`,
-        detail: `Holding within ${Math.round(Math.abs(change) * 100)}% of the recent average — time for a load bump.`,
+        title: `${ds.label} holding flat`,
+        detail: `Within ${Math.round(Math.abs(change) * 100)}% of the block before — time for a load bump.`,
       })
     }
   }

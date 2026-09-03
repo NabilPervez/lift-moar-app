@@ -1,7 +1,8 @@
 import Pill from './Pill'
+import ConfirmButton from './ConfirmButton'
 import { exById } from '../lib/exercises'
 
-export default function WorkoutDetailModal({ workout, exercises, onClose }) {
+export default function WorkoutDetailModal({ workout, exercises, onClose, onDelete }) {
   if (!workout) return null
 
   const date = new Date(workout.date).toLocaleDateString(undefined, {
@@ -96,6 +97,20 @@ export default function WorkoutDetailModal({ workout, exercises, onClose }) {
               </div>
             )
           })}
+
+          {onDelete && (
+            <ConfirmButton
+              onConfirm={() => {
+                onDelete(workout)
+                onClose()
+              }}
+              confirmLabel="Tap again to delete"
+              className="tap w-full mt-2 text-sm font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 py-3 rounded-xl"
+              armedClassName="tap w-full mt-2 text-sm font-bold text-white bg-red-600 py-3 rounded-xl"
+            >
+              Delete this workout
+            </ConfirmButton>
+          )}
         </div>
       </div>
     </div>
