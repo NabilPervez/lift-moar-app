@@ -1,5 +1,7 @@
 import { formatDuration } from './analytics'
 
+export const APP_URL = 'https://lift-moar.netlify.app/'
+
 /** Plain-text recap of a finished workout, suitable for copy/SMS/WhatsApp/export. */
 export function buildShareText(summary) {
   const { name, date, durationMs, totalVolume, completedSets, prs, lifts } = summary
@@ -37,7 +39,8 @@ export function buildShareText(summary) {
   }
 
   lines.push('')
-  lines.push('— via Lift Moar')
+  lines.push('Tracked with Lift Moar 🏋️')
+  lines.push(`Log your own: ${APP_URL}`)
   return lines.join('\n')
 }
 
