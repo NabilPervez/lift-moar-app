@@ -2,10 +2,10 @@ import { useState } from 'react'
 import Header from '../components/Header'
 import Pill from '../components/Pill'
 import WorkoutDetailModal from '../components/WorkoutDetailModal'
-import ConfirmButton from '../components/ConfirmButton'
 import { exById } from '../lib/exercises'
+import { formatDuration } from '../lib/analytics'
 
-export default function HistoryView({ history, exercises, onBack, onDeleteWorkout }) {
+export default function HistoryView({ history, exercises, onBack, onDeleteWorkout, onRepeat, onOpenExercise }) {
   const [detail, setDetail] = useState(null)
 
   return (
@@ -35,7 +35,7 @@ export default function HistoryView({ history, exercises, onBack, onDeleteWorkou
               )
               return (
                 <div
-                  key={`${w.date}-${i}`}
+                  key={w.id || `${w.date}-${i}`}
                   className="bg-surface-800 rounded-2xl border border-white/5 flex items-stretch overflow-hidden"
                 >
                   <button
@@ -51,6 +51,7 @@ export default function HistoryView({ history, exercises, onBack, onDeleteWorkou
                             month: 'short',
                             day: 'numeric',
                           })}
+                          {w.durationMs ? ` · ${formatDuration(w.durationMs)}` : ''}
                         </div>
                       </div>
                       <div className="text-right">
@@ -65,15 +66,13 @@ export default function HistoryView({ history, exercises, onBack, onDeleteWorkou
                     </div>
                   </button>
                   {onDeleteWorkout && (
-                    <ConfirmButton
-                      ariaLabel={`Delete ${w.name}`}
-                      onConfirm={() => onDeleteWorkout(w)}
-                      confirmLabel="Delete?"
+                    <button
+                      aria-label={`Delete ${w.name}`}
+                      onClick={() => onDeleteWorkout(w)}
                       className="tap w-12 flex items-center justify-center text-red-400 hover:bg-red-500/10 border-l border-white/5 flex-shrink-0"
-                      armedClassName="tap w-16 text-xs font-bold flex items-center justify-center text-white bg-red-600 border-l border-white/5 flex-shrink-0"
                     >
                       &#128465;
-                    </ConfirmButton>
+                    </button>
                   )}
                 </div>
               )
@@ -87,6 +86,8 @@ export default function HistoryView({ history, exercises, onBack, onDeleteWorkou
           exercises={exercises}
           onClose={() => setDetail(null)}
           onDelete={onDeleteWorkout}
+          onRepeat={onRepeat}
+          onOpenExercise={onOpenExercise}
         />
       )}
     </div>

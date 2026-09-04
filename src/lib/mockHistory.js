@@ -81,9 +81,12 @@ function setsFor(exerciseId, week, seed) {
 
 function workout(templateId, date, week) {
   const t = tmplById(templateId)
+  const isoDay = date.toISOString().slice(0, 10)
   return {
+    id: `wo_seed_${isoDay}`,
     name: t.name,
     date: date.toISOString(),
+    durationMs: (45 + ((week * 7 + t.exercises.length) % 25)) * 60000,
     exercises: t.exercises.map((item, i) => {
       const meta = exById(DEFAULT_EXERCISES, item.exerciseId) || { name: '', muscles: [] }
       return {

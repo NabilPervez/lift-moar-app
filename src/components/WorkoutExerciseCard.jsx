@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import Pill from './Pill'
@@ -9,13 +10,16 @@ export default function WorkoutExerciseCard({
   exercises,
   getPrev,
   updateSet,
+  updateExercise,
   toggleComplete,
   addSet,
   removeSet,
   onSwap,
+  onOpenExercise,
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id: exercise.key })
+  const [showNote, setShowNote] = useState(!!exercise.notes)
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -47,21 +51,47 @@ export default function WorkoutExerciseCard({
           >
             <span className="text-lg leading-none">&#8942;&#8942;</span>
           </button>
-          <h3 className="text-lg font-bold truncate">{exMeta.name}</h3>
+          <button
+            onClick={() => onOpenExercise?.(exercise.exerciseId)}
+            className="text-lg font-bold truncate text-left hover:text-blue-300"
+          >
+            {exMeta.name}
+          </button>
         </div>
-        <button
-          onClick={() => onSwap(exercise.key)}
-          aria-label={`Swap ${exMeta.name}`}
-          className="tap text-xs font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-full flex-shrink-0"
-        >
-          &#8646; Swap
-        </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <button
+            onClick={() => setShowNote((v) => !v)}
+            aria-label="Toggle note"
+            className={`tap w-8 h-8 flex items-center justify-center rounded-full ${
+              showNote || exercise.notes ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'
+            }`}
+          >
+            &#9998;
+          </button>
+          <button
+            onClick={() => onSwap(exercise.key)}
+            aria-label={`Swap ${exMeta.name}`}
+            className="tap text-xs font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-full"
+          >
+            &#8646; Swap
+          </button>
+        </div>
       </div>
       <div className="flex flex-wrap gap-1 mb-3">
         {exMeta.muscles.map((m) => (
           <Pill key={m} label={m} styleKey={m} small />
         ))}
       </div>
+
+      {showNote && (
+        <textarea
+          value={exercise.notes || ''}
+          onChange={(e) => updateExercise(eIdx, 'notes', e.target.value)}
+          placeholder="Note (form cue, tempo, how it felt…)"
+          rows={2}
+          className="w-full bg-surface-700 rounded-lg p-2 text-sm mb-3 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        />
+      )}
 
       <div className="grid grid-cols-12 gap-2 text-[10px] font-semibold text-gray-500 mb-2 uppercase tracking-wide">
         <div className="col-span-1 text-center">Set</div>
@@ -75,6 +105,11 @@ export default function WorkoutExerciseCard({
       {exercise.sets.map((set, sIdx) => {
         const prev = getPrev(exercise.exerciseId, sIdx)
         const isDone = set.completed
+        const fillFromPrev = () => {
+          if (!prev) return
+          if (set.weight === '') updateSet(eIdx, sIdx, 'weight', String(prev.weight))
+          if (set.reps === '') updateSet(eIdx, sIdx, 'reps', String(prev.reps))
+        }
         return (
           <div
             key={sIdx}
@@ -83,9 +118,14 @@ export default function WorkoutExerciseCard({
             }`}
           >
             <div className="col-span-1 text-center font-bold num text-gray-400">{sIdx + 1}</div>
-            <div className="col-span-3 text-center text-gray-500 text-xs num">
+            <button
+              onClick={fillFromPrev}
+              disabled={!prev}
+              aria-label={prev ? `Copy previous ${prev.weight} by ${prev.reps}` : 'No previous set'}
+              className="col-span-3 text-center text-gray-500 text-xs num tap-sm min-h-0 disabled:opacity-100 enabled:hover:text-blue-300 enabled:active:text-blue-400"
+            >
               {prev ? `${prev.weight}×${prev.reps}` : '—'}
-            </div>
+            </button>
             <div className="col-span-3">
               <input
                 type="number"
@@ -128,8 +168,10 @@ export default function WorkoutExerciseCard({
                   isDone ? `Mark set ${sIdx + 1} incomplete` : `Mark set ${sIdx + 1} complete`
                 }
                 onClick={() => toggleComplete(eIdx, sIdx)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  isDone ? 'bg-emerald-500 text-white' : 'bg-surface-600 text-transparent'
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors border ${
+                  isDone
+                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                    : 'bg-transparent border-gray-600 text-gray-600'
                 }`}
               >
                 &#10003;

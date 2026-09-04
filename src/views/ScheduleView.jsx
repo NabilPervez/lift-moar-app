@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Header from '../components/Header'
 import TargetingBars from '../components/TargetingBars'
 import WeeklyCoverage from '../components/WeeklyCoverage'
@@ -11,8 +11,10 @@ export default function ScheduleView({
   templates,
   premadeTemplates,
   exercises,
+  history,
   onAssign,
   onStart,
+  onRepeatLast,
 }) {
   const [pickerDay, setPickerDay] = useState(null)
   const todayName = DAYS[(new Date().getDay() + 6) % 7]
@@ -20,14 +22,37 @@ export default function ScheduleView({
   const resolve = (id) =>
     id ? templates.find((t) => t.id === id) || premadeTemplates.find((t) => t.id === id) || null : null
 
-  const weekTemplates = DAYS.map((d) => resolve(schedule[d])).filter(Boolean)
+  const weekTemplates = useMemo(
+    () => DAYS.map((d) => resolve(schedule[d])).filter(Boolean),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [schedule, templates, premadeTemplates],
+  )
+
+  const last = history && history.length ? history[history.length - 1] : null
 
   return (
     <div className="pb-28">
       <Header title="Schedule" subtitle="Your training week at a glance" />
 
       <div className="px-4 space-y-3">
-        <div className="rise-in" style={{ animationDelay: '0ms' }}>
+        {last && (
+          <button
+            onClick={() => onRepeatLast(last)}
+            className="rise-in w-full text-left bg-surface-800 border border-white/5 rounded-2xl p-4 tap active:bg-white/5 transition-colors"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+                  Repeat last workout
+                </div>
+                <div className="font-bold text-lg">{last.name}</div>
+              </div>
+              <span className="text-blue-400 font-bold text-lg">&#8635;</span>
+            </div>
+          </button>
+        )}
+
+        <div className="rise-in" style={{ animationDelay: '40ms' }}>
           <WeeklyCoverage weekTemplates={weekTemplates} exercises={exercises} />
         </div>
 
@@ -44,7 +69,7 @@ export default function ScheduleView({
               className={`rise-in rounded-2xl p-4 border ${
                 isToday ? 'border-blue-500/40 bg-blue-500/5' : 'border-white/5 bg-surface-800'
               }`}
-              style={{ animationDelay: `${Math.min(idx + 1, 6) * 45}ms` }}
+              style={{ animationDelay: `${Math.min(idx + 2, 7) * 45}ms` }}
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">

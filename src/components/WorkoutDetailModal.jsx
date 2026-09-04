@@ -1,8 +1,15 @@
 import Pill from './Pill'
-import ConfirmButton from './ConfirmButton'
 import { exById } from '../lib/exercises'
+import { formatDuration } from '../lib/analytics'
 
-export default function WorkoutDetailModal({ workout, exercises, onClose, onDelete }) {
+export default function WorkoutDetailModal({
+  workout,
+  exercises,
+  onClose,
+  onDelete,
+  onRepeat,
+  onOpenExercise,
+}) {
   if (!workout) return null
 
   const date = new Date(workout.date).toLocaleDateString(undefined, {
@@ -29,7 +36,7 @@ export default function WorkoutDetailModal({ workout, exercises, onClose, onDele
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
       <div
-        className="slide-up bg-surface-800 rounded-t-3xl w-full max-w-md p-5 h-[88vh] flex flex-col safe-bottom"
+        className="slide-up bg-surface-800 rounded-t-3xl w-full max-w-md p-5 max-h-[90vh] flex flex-col safe-bottom"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="w-10 h-1 bg-gray-700 rounded-full mx-auto mb-4 flex-shrink-0"></div>
@@ -37,7 +44,10 @@ export default function WorkoutDetailModal({ workout, exercises, onClose, onDele
         <div className="flex items-start justify-between gap-3 flex-shrink-0">
           <div>
             <h3 className="font-black text-xl tracking-tight">{workout.name}</h3>
-            <p className="text-gray-500 text-sm mt-0.5">{date}</p>
+            <p className="text-gray-500 text-sm mt-0.5">
+              {date}
+              {workout.durationMs ? ` · ${formatDuration(workout.durationMs)}` : ''}
+            </p>
           </div>
           <button
             aria-label="Close"
@@ -63,17 +73,31 @@ export default function WorkoutDetailModal({ workout, exercises, onClose, onDele
           </div>
         </div>
 
+        {workout.notes && (
+          <div className="bg-surface-700 rounded-xl p-3 text-sm text-gray-300 mb-3 flex-shrink-0 whitespace-pre-wrap">
+            {workout.notes}
+          </div>
+        )}
+
         <div className="overflow-y-auto flex-1 space-y-3">
           {workout.exercises.map((ex, i) => {
             const meta = exById(exercises, ex.exerciseId) || { name: ex.name, muscles: ex.muscles || [] }
             return (
               <div key={i} className="bg-surface-700 rounded-2xl p-4">
-                <div className="font-bold">{meta.name}</div>
+                <button
+                  onClick={() => onOpenExercise?.(ex.exerciseId)}
+                  className="font-bold text-left hover:text-blue-300"
+                >
+                  {meta.name}
+                </button>
                 <div className="flex flex-wrap gap-1 mt-1 mb-3">
                   {(meta.muscles || []).map((m) => (
                     <Pill key={m} label={m} styleKey={m} small />
                   ))}
                 </div>
+                {ex.notes && (
+                  <div className="text-xs text-gray-400 mb-2 whitespace-pre-wrap">{ex.notes}</div>
+                )}
 
                 <div className="grid grid-cols-12 gap-2 text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">
                   <div className="col-span-2 text-center">Set</div>
@@ -97,19 +121,30 @@ export default function WorkoutDetailModal({ workout, exercises, onClose, onDele
               </div>
             )
           })}
+        </div>
 
+        <div className="flex gap-2 pt-3 flex-shrink-0">
+          {onRepeat && (
+            <button
+              onClick={() => {
+                onRepeat(workout)
+                onClose()
+              }}
+              className="tap flex-1 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 py-3 rounded-xl"
+            >
+              &#8635; Repeat
+            </button>
+          )}
           {onDelete && (
-            <ConfirmButton
-              onConfirm={() => {
+            <button
+              onClick={() => {
                 onDelete(workout)
                 onClose()
               }}
-              confirmLabel="Tap again to delete"
-              className="tap w-full mt-2 text-sm font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 py-3 rounded-xl"
-              armedClassName="tap w-full mt-2 text-sm font-bold text-white bg-red-600 py-3 rounded-xl"
+              className="tap flex-1 text-sm font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 py-3 rounded-xl"
             >
-              Delete this workout
-            </ConfirmButton>
+              Delete
+            </button>
           )}
         </div>
       </div>

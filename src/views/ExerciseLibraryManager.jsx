@@ -3,7 +3,7 @@ import Header from '../components/Header'
 import Pill from '../components/Pill'
 import NewExerciseModal from '../components/NewExerciseModal'
 
-export default function ExerciseLibraryManager({ exercises, onCreate, onDelete, onBack }) {
+export default function ExerciseLibraryManager({ exercises, onCreate, onDelete, onOpenExercise, onBack }) {
   const [showNew, setShowNew] = useState(false)
   const [query, setQuery] = useState('')
 
@@ -42,9 +42,12 @@ export default function ExerciseLibraryManager({ exercises, onCreate, onDelete, 
         {filtered.map((ex) => (
           <div
             key={ex.id}
-            className="bg-surface-800 rounded-xl p-3 flex items-center justify-between border border-white/5"
+            className="bg-surface-800 rounded-xl flex items-stretch justify-between border border-white/5 overflow-hidden"
           >
-            <div>
+            <button
+              onClick={() => onOpenExercise?.(ex.id)}
+              className="flex-1 text-left p-3 tap active:bg-white/5 transition-colors min-w-0"
+            >
               <div className="font-semibold">
                 {ex.name}
                 {ex.equipment && (
@@ -56,11 +59,11 @@ export default function ExerciseLibraryManager({ exercises, onCreate, onDelete, 
                   <Pill key={m} label={m} styleKey={m} small />
                 ))}
               </div>
-            </div>
+            </button>
             <button
               aria-label={`Delete ${ex.name}`}
               onClick={() => onDelete(ex.id)}
-              className="tap w-9 h-9 flex items-center justify-center text-red-400 hover:bg-white/5 rounded-full flex-shrink-0"
+              className="tap w-11 flex items-center justify-center text-red-400 hover:bg-red-500/10 border-l border-white/5 flex-shrink-0"
             >
               &#128465;
             </button>

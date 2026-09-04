@@ -3,28 +3,18 @@ import { useState } from 'react'
 const SLIDES = [
   {
     icon: '▦',
-    title: 'Functional Lift Tracker',
-    body: 'Plan your training week, run guided sessions, and watch your numbers move — all on your phone. No account, nothing in the cloud: every workout lives in this browser and only this browser.',
-  },
-  {
-    icon: '☰',
-    title: 'Templates & schedule',
-    body: 'Build reusable workout templates (sets, reps, rest per exercise) and drop them onto days of the week. Each day shows colour-coded muscle-group bars so you can see your split at a glance. A full Upper / Lower / Bodyweight plan is already loaded.',
+    title: 'Plan your week',
+    body: 'Build workout templates and drop them onto days. A full Upper / Lower / Bodyweight plan and 20 pre-made workouts are already loaded — and there\'s sample training history so the charts have something to show.',
   },
   {
     icon: '⏱',
-    title: 'Run a session',
-    body: 'Start a workout and log weight, reps and RPE set by set. Your previous numbers sit right next to each input, a rest timer counts down with a chime, and you can drag exercises into a new order or swap one for a same-muscle alternative.',
+    title: 'Log fast',
+    body: 'Weight, reps and RPE per set. Your last numbers sit right next to each input — tap to copy. A rest timer runs in the background, and you can drag lifts to reorder or swap one mid-session.',
   },
   {
     icon: '↗',
-    title: 'Read your progress',
-    body: 'The Progress tab turns your history into charts — muscle-group volume over time and per-lift weight progression. "Quick Read" auto-tags each trend good, watch or flag so plateaus and odd data entries surface on their own.',
-  },
-  {
-    icon: '⚙',
-    title: 'Your data stays yours',
-    body: 'Every finished workout gets a summary with personal records. Tap any logged workout for a full set-by-set breakdown, export or import your whole history as JSON from Settings, and switch between dark and light themes.',
+    title: 'Watch it move',
+    body: 'Every finished workout gets a summary with personal records. The Progress tab charts your volume, bodyweight and each lift over time, with plain-language callouts on what\'s working. Nothing leaves your phone.',
   },
 ]
 
@@ -50,7 +40,7 @@ export default function Onboarding({ onDone }) {
           key={i}
           className={`flex flex-col items-center ${dir >= 0 ? 'slide-in-right' : 'slide-in-left'}`}
         >
-          <div className="w-20 h-20 rounded-3xl bg-blue-600/15 ring-1 ring-blue-500/30 flex items-center justify-center text-4xl text-blue-400 mb-8">
+          <div className="w-24 h-24 rounded-[28px] bg-blue-600/15 ring-1 ring-blue-500/30 flex items-center justify-center text-5xl text-blue-400 mb-10">
             {s.icon}
           </div>
           <h2 className="text-2xl font-black tracking-tight mb-3">{s.title}</h2>
@@ -82,7 +72,7 @@ export default function Onboarding({ onDone }) {
             onClick={() => (last ? onDone() : go(1))}
             className="tap flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl"
           >
-            {last ? 'Get started' : 'Next'}
+            {last ? 'Start exploring' : 'Next'}
           </button>
         </div>
       </div>

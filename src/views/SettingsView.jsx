@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react'
 import Header from '../components/Header'
 import ConfirmButton from '../components/ConfirmButton'
+import { getSettings, patchSettings } from '../lib/settings'
+import { canNotify, ensureNotifyPermission } from '../lib/notify'
 
 const EXPORT_VERSION = 1
 
@@ -39,6 +41,22 @@ export default function SettingsView({
   const fileRef = useRef(null)
   const [msg, setMsg] = useState(null)
   const [pendingImport, setPendingImport] = useState(null)
+  const [prefs, setPrefs] = useState(() => getSettings())
+  const [notifyState, setNotifyState] = useState(() =>
+    canNotify() ? Notification.permission : 'unsupported',
+  )
+
+  const setPref = (patch) => {
+    patchSettings(patch)
+    setPrefs((p) => ({ ...p, ...patch }))
+  }
+
+  const requestAlerts = async () => {
+    const ok = await ensureNotifyPermission()
+    setNotifyState(canNotify() ? Notification.permission : 'unsupported')
+    setPref({ notifyAsked: true })
+    flash(ok ? 'Rest alerts enabled.' : 'Notification permission not granted.', ok ? 'ok' : 'err')
+  }
 
   const flash = (text, tone = 'ok') => {
     setMsg({ text, tone })
@@ -107,6 +125,57 @@ export default function SettingsView({
                   </button>
                 ))}
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Preferences */}
+        <section>
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            Preferences
+          </div>
+          <div className="bg-surface-800 rounded-2xl border border-white/5 divide-y divide-white/5">
+            <div className="px-4 py-4 flex items-center justify-between">
+              <div>
+                <div className="font-semibold">Haptics</div>
+                <div className="text-gray-500 text-sm">Vibrate on set complete & PRs</div>
+              </div>
+              <button
+                role="switch"
+                aria-checked={prefs.haptics !== false}
+                onClick={() => setPref({ haptics: prefs.haptics === false })}
+                className={`w-12 h-7 rounded-full p-0.5 transition-colors flex-shrink-0 ${
+                  prefs.haptics !== false ? 'bg-blue-600' : 'bg-surface-600'
+                }`}
+              >
+                <span
+                  className={`block w-6 h-6 rounded-full bg-white transition-transform ${
+                    prefs.haptics !== false ? 'translate-x-5' : ''
+                  }`}
+                />
+              </button>
+            </div>
+            <div className="px-4 py-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="font-semibold">Rest timer alerts</div>
+                <div className="text-gray-500 text-sm">
+                  {notifyState === 'granted'
+                    ? 'On — you\'ll be notified when rest ends'
+                    : notifyState === 'denied'
+                      ? 'Blocked in your browser settings'
+                      : notifyState === 'unsupported'
+                        ? 'Not supported on this device'
+                        : 'Get a notification when a rest timer finishes'}
+                </div>
+              </div>
+              {notifyState === 'default' && (
+                <button
+                  onClick={requestAlerts}
+                  className="tap-sm min-h-0 text-xs font-bold text-white bg-blue-600 px-3 py-2 rounded-lg flex-shrink-0"
+                >
+                  Enable
+                </button>
+              )}
             </div>
           </div>
         </section>

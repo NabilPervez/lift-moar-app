@@ -1,31 +1,156 @@
 import { useState } from 'react'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import Header from '../components/Header'
 import Pill from '../components/Pill'
 import ExercisePickerModal from '../components/ExercisePickerModal'
 import { exById } from '../lib/exercises'
 import { uid } from '../lib/storage'
 
-export default function TemplateEditor({ template, exercises, onSave, onCancel, onCreateExercise }) {
+const REST_OPTIONS = [30, 45, 60, 90, 120, 150]
+
+function SortableRow({ id, item, exercises, updateField, removeExercise, onOpenExercise }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : undefined,
+  }
+  const ex = exById(exercises, item.exerciseId) || { name: 'Unknown', muscles: [] }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-surface-800 rounded-2xl p-4 border ${
+        isDragging ? 'border-blue-500/50 opacity-90' : 'border-white/5'
+      }`}
+    >
+      <div className="flex justify-between items-start mb-3 gap-2">
+        <div className="flex items-start gap-1.5 min-w-0">
+          <button
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            aria-label={`Reorder ${ex.name}`}
+            className="tap -ml-1 -mt-1 w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-300 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
+          >
+            <span className="text-lg leading-none">&#8942;&#8942;</span>
+          </button>
+          <div className="min-w-0">
+            <button
+              onClick={() => onOpenExercise?.(item.exerciseId)}
+              className="font-bold text-left truncate hover:text-blue-300"
+            >
+              {ex.name}
+            </button>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {ex.muscles.map((m) => (
+                <Pill key={m} label={m} styleKey={m} small />
+              ))}
+            </div>
+          </div>
+        </div>
+        <button
+          aria-label={`Remove ${ex.name}`}
+          onClick={removeExercise}
+          className="tap w-8 h-8 text-red-400 hover:text-red-300 flex-shrink-0"
+        >
+          &#10005;
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase font-semibold">Sets</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={item.targetSets}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => updateField('targetSets', Math.max(1, Number(e.target.value) || 1))}
+            className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase font-semibold">Reps</label>
+          <input
+            type="number"
+            inputMode="numeric"
+            value={item.reps}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => updateField('reps', Math.max(1, Number(e.target.value) || 1))}
+            className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
+          />
+        </div>
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase font-semibold">Rest</label>
+          <select
+            value={item.rest}
+            onChange={(e) => updateField('rest', Number(e.target.value))}
+            className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
+          >
+            {REST_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}s
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function TemplateEditor({
+  template,
+  exercises,
+  onSave,
+  onCancel,
+  onCreateExercise,
+  onOpenExercise,
+}) {
   const isNew = !template
   const [name, setName] = useState(template ? template.name : '')
-  const [list, setList] = useState(template ? template.exercises.map((e) => ({ ...e })) : [])
+  const [list, setList] = useState(() =>
+    template ? template.exercises.map((e) => ({ ...e, _k: uid('row') })) : [],
+  )
   const [showPicker, setShowPicker] = useState(false)
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
   const addExercise = (exerciseId) => {
-    setList((l) => [...l, { exerciseId, targetSets: 3, reps: 8, rest: 90 }])
+    setList((l) => [...l, { exerciseId, targetSets: 3, reps: 8, rest: 90, _k: uid('row') }])
     setShowPicker(false)
   }
-  const removeExercise = (idx) => setList((l) => l.filter((_, i) => i !== idx))
-  const updateField = (idx, field, val) =>
-    setList((l) => l.map((e, i) => (i === idx ? { ...e, [field]: val } : e)))
-  const move = (idx, dir) =>
+  const removeExercise = (k) => setList((l) => l.filter((e) => e._k !== k))
+  const updateField = (k, field, val) =>
+    setList((l) => l.map((e) => (e._k === k ? { ...e, [field]: val } : e)))
+  const handleDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return
     setList((l) => {
-      const arr = [...l]
-      const j = idx + dir
-      if (j < 0 || j >= arr.length) return arr
-      ;[arr[idx], arr[j]] = [arr[j], arr[idx]]
-      return arr
+      const from = l.findIndex((e) => e._k === active.id)
+      const to = l.findIndex((e) => e._k === over.id)
+      return from < 0 || to < 0 ? l : arrayMove(l, from, to)
     })
+  }
 
   const canSave = name.trim().length > 0 && list.length > 0
 
@@ -45,91 +170,23 @@ export default function TemplateEditor({ template, exercises, onSave, onCancel, 
           />
         </div>
 
-        <div className="space-y-3">
-          {list.map((item, idx) => {
-            const ex = exById(exercises, item.exerciseId) || { name: 'Unknown', muscles: [] }
-            return (
-              <div key={idx} className="bg-surface-800 rounded-2xl p-4 border border-white/5">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <div className="font-bold">{ex.name}</div>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {ex.muscles.map((m) => (
-                        <Pill key={m} label={m} styleKey={m} small />
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      aria-label="Move up"
-                      onClick={() => move(idx, -1)}
-                      className="tap w-8 h-8 text-gray-500 hover:text-white"
-                    >
-                      &#8593;
-                    </button>
-                    <button
-                      aria-label="Move down"
-                      onClick={() => move(idx, 1)}
-                      className="tap w-8 h-8 text-gray-500 hover:text-white"
-                    >
-                      &#8595;
-                    </button>
-                    <button
-                      aria-label={`Remove ${ex.name}`}
-                      onClick={() => removeExercise(idx)}
-                      className="tap w-8 h-8 text-red-400 hover:text-red-300"
-                    >
-                      &#10005;
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div>
-                    <label className="text-[10px] text-gray-500 uppercase font-semibold">Sets</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={item.targetSets}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) =>
-                        updateField(idx, 'targetSets', Math.max(1, Number(e.target.value) || 1))
-                      }
-                      className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 uppercase font-semibold">Reps</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={item.reps}
-                      onFocus={(e) => e.target.select()}
-                      onChange={(e) =>
-                        updateField(idx, 'reps', Math.max(1, Number(e.target.value) || 1))
-                      }
-                      className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-gray-500 uppercase font-semibold">Rest</label>
-                    <select
-                      value={item.rest}
-                      onChange={(e) => updateField(idx, 'rest', Number(e.target.value))}
-                      className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
-                    >
-                      <option value={30}>30s</option>
-                      <option value={45}>45s</option>
-                      <option value={60}>60s</option>
-                      <option value={90}>90s</option>
-                      <option value={120}>120s</option>
-                      <option value={150}>150s</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={list.map((e) => e._k)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-3">
+              {list.map((item) => (
+                <SortableRow
+                  key={item._k}
+                  id={item._k}
+                  item={item}
+                  exercises={exercises}
+                  updateField={(field, val) => updateField(item._k, field, val)}
+                  removeExercise={() => removeExercise(item._k)}
+                  onOpenExercise={onOpenExercise}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         <button
           onClick={() => setShowPicker(true)}
@@ -144,7 +201,7 @@ export default function TemplateEditor({ template, exercises, onSave, onCancel, 
             onSave({
               id: template ? template.id : uid('tmpl'),
               name: name.trim(),
-              exercises: list,
+              exercises: list.map(({ _k, ...rest }) => rest),
             })
           }
           className={`w-full font-bold py-4 rounded-xl text-lg ${

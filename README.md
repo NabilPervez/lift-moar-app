@@ -13,13 +13,16 @@ Live: https://lift-moar.netlify.app/
 - Tailwind CSS 3, CSS-variable-driven dark/light theming
 - CSS-only motion — screen fades, staggered list entrances, animated bar-graph
   fills; resting state is always visible so a throttled tab can't get stuck
-- [Chart.js](https://www.chartjs.org/) via `react-chartjs-2`, code-split behind the Progress tab
-- [dnd-kit](https://dndkit.com/) — drag-to-reorder exercises mid-workout (touch + mouse)
+- [Chart.js](https://www.chartjs.org/) via `react-chartjs-2`, in a shared code-split chunk
+- [dnd-kit](https://dndkit.com/) — drag-to-reorder templates, template exercises, and lifts mid-workout
 - All data is stored locally in the browser (`localStorage`) — no backend
 - ~155-exercise starter library + a ready-made Upper/Lower/Bodyweight plan
 - 20-workout pre-made library (`premadeTemplates.js`) — assignable, duplicable
+- In-progress workouts persist across reloads; wall-clock rest timer with notification
 - Post-workout summary (duration, volume, sets, e1RM personal records)
-- First-run onboarding walkthrough + a generated sample training block
+- Per-exercise history + progression chart, reachable from any lift name
+- Bodyweight log, consistency streak + heatmap, per-workout / per-exercise notes
+- Undo toasts on every delete; first-run onboarding + a generated sample block
 
 ## Getting started
 
@@ -110,8 +113,10 @@ src/
 | `flt_exercises_v1`  | Exercise library (`{id, name, equipment, muscles[]}`) |
 | `flt_templates_v1`  | Workout templates                              |
 | `flt_schedule_v1`   | Day → template id map                          |
-| `flt_history_v1`    | Completed workouts (source for the dashboard)  |
-| `flt_settings_v1`   | `{ theme, onboarded }`                          |
+| `flt_history_v1`    | Completed workouts (`{id, date, durationMs, notes, exercises[]}`) |
+| `flt_active_v1`     | In-progress workout session (cleared on finish/cancel) |
+| `flt_bodyweight_v1` | `{id, date, weight}[]`                          |
+| `flt_settings_v1`   | `{ theme, onboarded, haptics, notifyAsked, dragTipSeen, a2hsDismissedAt }` |
 | `flt_schema_v`      | Migration schema version                       |
 
 A fresh install (no stored history) starts seeded with the generated sample

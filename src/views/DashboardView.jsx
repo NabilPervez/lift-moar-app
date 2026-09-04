@@ -1,31 +1,17 @@
 import { useMemo, useState } from 'react'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js'
-import { Line } from 'react-chartjs-2'
 import Header from '../components/Header'
 import Pill from '../components/Pill'
-import ConfirmButton from '../components/ConfirmButton'
 import WorkoutDetailModal from '../components/WorkoutDetailModal'
+import ConsistencyCard from '../components/ConsistencyCard'
+import BodyweightCard from '../components/BodyweightCard'
+import LiftLineChart from '../components/LiftLineChart'
 import { exById } from '../lib/exercises'
 import {
   muscleGroupVolumeSeries,
-  upperBodyProgressionSeries,
   exerciseHistoryOptions,
   specificLiftSeries,
   quickRead,
 } from '../lib/analytics'
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
-
-const PALETTE = ['#3b82f6', '#f59e0b', '#10b981', '#f43f5e', '#a855f7', '#14b8a6']
 
 const TONE = {
   good: 'bg-emerald-500/15 text-emerald-300 ring-emerald-500/30',
@@ -33,58 +19,6 @@ const TONE = {
   flag: 'bg-rose-500/15 text-rose-300 ring-rose-500/30',
 }
 const TONE_LABEL = { good: 'GOOD', watch: 'WATCH', flag: 'FLAG' }
-
-const chartTheme = (theme) =>
-  theme === 'light'
-    ? { grid: 'rgba(15,23,42,0.08)', tick: '#64748b', legend: '#475569', ttBg: '#ffffff', ttBorder: '#e2e8f0', ttTitle: '#0f172a', ttBody: '#334155' }
-    : { grid: 'rgba(255,255,255,0.05)', tick: '#6b7280', legend: '#9ca3af', ttBg: '#1a2233', ttBorder: '#232d42', ttTitle: '#f3f4f6', ttBody: '#d1d5db' }
-
-const baseOptions = (theme, opts = {}) => {
-  const c = chartTheme(theme)
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: {
-        display: opts.legend !== false,
-        labels: { color: c.legend, font: { size: 11 }, boxWidth: 10, usePointStyle: true },
-      },
-      tooltip: {
-        backgroundColor: c.ttBg,
-        borderColor: c.ttBorder,
-        borderWidth: 1,
-        titleColor: c.ttTitle,
-        bodyColor: c.ttBody,
-      },
-    },
-    scales: {
-      x: { grid: { color: c.grid }, ticks: { color: c.tick, font: { size: 10 } } },
-      y: {
-        grid: { color: c.grid },
-        ticks: { color: c.tick, font: { size: 10 } },
-        beginAtZero: opts.beginAtZero !== false,
-      },
-    },
-  }
-}
-
-function toLineData({ labels, datasets }) {
-  return {
-    labels,
-    datasets: datasets.map((ds, i) => ({
-      label: ds.label,
-      data: ds.data,
-      borderColor: PALETTE[i % PALETTE.length],
-      backgroundColor: PALETTE[i % PALETTE.length] + '22',
-      tension: 0.3,
-      spanGaps: true,
-      pointRadius: 3,
-      pointHoverRadius: 5,
-      borderWidth: 2,
-    })),
-  }
-}
 
 function ChartCard({ title, subtitle, empty, children }) {
   return (
@@ -96,16 +30,25 @@ function ChartCard({ title, subtitle, empty, children }) {
       {empty ? (
         <p className="text-gray-600 italic text-sm py-10 text-center">{empty}</p>
       ) : (
-        <div className="relative h-56 w-full">{children}</div>
+        children
       )}
     </div>
   )
 }
 
-export default function DashboardView({ history, exercises, theme, onOpenHistory, onDeleteWorkout }) {
+export default function DashboardView({
+  history,
+  exercises,
+  bodyweight,
+  theme,
+  onOpenHistory,
+  onDeleteWorkout,
+  onOpenExercise,
+  onLogBodyweight,
+  onDeleteBodyweight,
+}) {
   const reads = useMemo(() => quickRead(history, exercises), [history, exercises])
   const muscleVol = useMemo(() => muscleGroupVolumeSeries(history, exercises), [history, exercises])
-  const upper = useMemo(() => upperBodyProgressionSeries(history, exercises), [history, exercises])
   const options = useMemo(() => exerciseHistoryOptions(history, exercises), [history, exercises])
 
   const [selected, setSelected] = useState(null)
@@ -127,6 +70,8 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
       <Header title="Progress" subtitle="Volume and lift trends from your logged workouts" />
 
       <div className="px-4 space-y-4">
+        <ConsistencyCard history={history} />
+
         {/* Quick Read */}
         <div className="bg-surface-800 rounded-2xl p-4 border border-white/5">
           <div className="font-bold mb-1">Quick Read</div>
@@ -150,6 +95,13 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
           </div>
         </div>
 
+        <BodyweightCard
+          entries={bodyweight}
+          theme={theme}
+          onLog={onLogBodyweight}
+          onDelete={onDeleteBodyweight}
+        />
+
         {/* Muscle Group Volume Over Time */}
         <ChartCard
           title="Muscle Group Volume Over Time"
@@ -162,27 +114,25 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
                 : null
           }
         >
-          <Line data={toLineData(muscleVol)} options={baseOptions(theme)} />
-        </ChartCard>
-
-        {/* Upper Body Lift Progression */}
-        <ChartCard
-          title="Upper Body Lift Progression"
-          subtitle="Heaviest working weight (lbs) per session — rows, curls, shrugs, overhead press"
-          empty={upper.datasets.length === 0 ? 'No matching upper-body lifts logged yet.' : null}
-        >
-          <Line data={toLineData(upper)} options={baseOptions(theme, { beginAtZero: false })} />
+          <LiftLineChart
+            theme={theme}
+            labels={muscleVol.labels}
+            datasets={muscleVol.datasets}
+          />
         </ChartCard>
 
         {/* Specific Lift Progression */}
         <div className="bg-surface-800 rounded-2xl p-4 border border-white/5">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div>
-              <div className="font-bold">Specific Lift Progression</div>
-              <div className="text-gray-500 text-xs mt-0.5">Weight jumps across logged dates</div>
+              <div className="font-bold">Lift Progression</div>
+              <div className="text-gray-500 text-xs mt-0.5">
+                Top weight per session · tap the name for full history
+              </div>
             </div>
             {options.length > 0 && (
               <select
+                aria-label="Choose a lift"
                 value={selectedId || ''}
                 onChange={(e) => setSelected(e.target.value)}
                 className="bg-surface-700 rounded-lg p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 max-w-[45%]"
@@ -200,15 +150,23 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
               {hasHistory ? 'Not enough data for this lift yet.' : 'Log a workout to track a lift.'}
             </p>
           ) : (
-            <div className="relative h-56 w-full">
-              <Line
-                data={toLineData({
-                  labels: specific.labels,
-                  datasets: [{ label: selectedName, data: specific.data }],
-                })}
-                options={baseOptions(theme, { legend: false, beginAtZero: false })}
+            <>
+              <LiftLineChart
+                theme={theme}
+                legend={false}
+                beginAtZero={false}
+                labels={specific.labels}
+                datasets={[{ label: selectedName, data: specific.data }]}
               />
-            </div>
+              {selectedId && (
+                <button
+                  onClick={() => onOpenExercise(selectedId)}
+                  className="tap-sm min-h-0 text-xs font-bold text-blue-400 hover:text-blue-300 mt-2"
+                >
+                  Open {selectedName} →
+                </button>
+              )}
+            </>
           )}
         </div>
 
@@ -243,7 +201,7 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
                 ).slice(0, 4)
                 return (
                   <div
-                    key={`${w.date}-${i}`}
+                    key={w.id || `${w.date}-${i}`}
                     className="bg-surface-700 rounded-xl flex items-stretch overflow-hidden"
                   >
                     <button
@@ -265,15 +223,13 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
                       </div>
                     </button>
                     {onDeleteWorkout && (
-                      <ConfirmButton
-                        ariaLabel={`Delete ${w.name}`}
-                        onConfirm={() => onDeleteWorkout(w)}
-                        confirmLabel="Delete?"
+                      <button
+                        aria-label={`Delete ${w.name}`}
+                        onClick={() => onDeleteWorkout(w)}
                         className="tap w-11 flex items-center justify-center text-red-400 hover:bg-red-500/10 border-l border-white/5 flex-shrink-0"
-                        armedClassName="tap w-16 text-xs font-bold flex items-center justify-center text-white bg-red-600 border-l border-white/5 flex-shrink-0"
                       >
                         &#128465;
-                      </ConfirmButton>
+                      </button>
                     )}
                   </div>
                 )
@@ -289,6 +245,7 @@ export default function DashboardView({ history, exercises, theme, onOpenHistory
           exercises={exercises}
           onClose={() => setDetail(null)}
           onDelete={onDeleteWorkout}
+          onOpenExercise={onOpenExercise}
         />
       )}
     </div>

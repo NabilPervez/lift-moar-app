@@ -142,6 +142,147 @@ function sortedByDate(history) {
   return history.slice().sort((a, b) => new Date(a.date) - new Date(b.date))
 }
 
+/* ============================== PER-EXERCISE HISTORY ============================== */
+
+/** Every session that logged completed sets of one exercise, oldest first. */
+export function exerciseSessions(history, exerciseId) {
+  return sortedByDate(history)
+    .map((w) => {
+      const ex = w.exercises.find((e) => e.exerciseId === exerciseId)
+      if (!ex) return null
+      const done = completedSets(ex)
+      if (!done.length) return null
+      const volume = done.reduce((v, s) => v + toNum(s.weight) * toNum(s.reps), 0)
+      return {
+        date: w.date,
+        workoutName: w.name,
+        sets: done.map((s) => ({ weight: toNum(s.weight), reps: toNum(s.reps), rpe: s.rpe })),
+        topWeight: maxWeight(ex),
+        e1rm: Math.round(bestE1RM(ex)),
+        volume: Math.round(volume),
+      }
+    })
+    .filter(Boolean)
+}
+
+/** Headline stats + progression series for one exercise. */
+export function exerciseStats(history, exercises, exerciseId) {
+  const sessions = exerciseSessions(history, exerciseId)
+  let bestWeight = 0
+  let bestReps = 0
+  let bestE1rm = 0
+  for (const s of sessions) {
+    for (const set of s.sets) {
+      if (set.weight > bestWeight || (set.weight === bestWeight && set.reps > bestReps)) {
+        bestWeight = set.weight
+        bestReps = set.reps
+      }
+    }
+    bestE1rm = Math.max(bestE1rm, s.e1rm)
+  }
+  return {
+    name: nameFor({ exerciseId }, exercises),
+    sessionCount: sessions.length,
+    lastDate: sessions.length ? sessions[sessions.length - 1].date : null,
+    bestSet: bestWeight ? { weight: bestWeight, reps: bestReps } : null,
+    bestE1rm,
+    sessions,
+    series: {
+      labels: sessions.map((s) => fmtDate(s.date)),
+      weight: sessions.map((s) => s.topWeight),
+      e1rm: sessions.map((s) => s.e1rm),
+    },
+  }
+}
+
+/* ============================== CONSISTENCY ============================== */
+
+function startOfWeek(d) {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  x.setDate(x.getDate() - ((x.getDay() + 6) % 7)) // Monday
+  return x
+}
+const dayKey = (d) => {
+  const x = new Date(d)
+  return `${x.getFullYear()}-${x.getMonth()}-${x.getDate()}`
+}
+
+/**
+ * Training consistency: this week / month counts, the current run of
+ * consecutive weeks with at least one workout, and a per-day heatmap for the
+ * last `weeks` weeks (Mon-first).
+ */
+export function consistency(history, weeks = 12) {
+  const now = new Date()
+  const weekStart = startOfWeek(now)
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+
+  const byDay = new Map()
+  const weekSet = new Set()
+  let thisWeek = 0
+  let thisMonth = 0
+
+  for (const w of history) {
+    const d = new Date(w.date)
+    byDay.set(dayKey(d), (byDay.get(dayKey(d)) || 0) + 1)
+    weekSet.add(+startOfWeek(d))
+    if (d >= weekStart) thisWeek++
+    if (d >= monthStart) thisMonth++
+  }
+
+  // consecutive weeks back from this one (or last one) with a workout
+  let weekStreak = 0
+  const cursor = new Date(weekStart)
+  if (!weekSet.has(+cursor)) cursor.setDate(cursor.getDate() - 7) // grace: allow streak to hold mid-week
+  while (weekSet.has(+cursor)) {
+    weekStreak++
+    cursor.setDate(cursor.getDate() - 7)
+  }
+
+  const gridStart = new Date(weekStart)
+  gridStart.setDate(gridStart.getDate() - 7 * (weeks - 1))
+  const heatmap = []
+  for (let i = 0; i < weeks * 7; i++) {
+    const d = new Date(gridStart)
+    d.setDate(d.getDate() + i)
+    heatmap.push({ date: +d, count: d > now ? -1 : byDay.get(dayKey(d)) || 0 })
+  }
+
+  return { thisWeek, thisMonth, weekStreak, totalWorkouts: history.length, heatmap, weeks }
+}
+
+/* ============================== BODYWEIGHT ============================== */
+
+export function bodyweightSeries(entries) {
+  const sorted = (entries || [])
+    .filter((e) => Number.isFinite(toNum(e.weight)) && toNum(e.weight) > 0)
+    .slice()
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+  if (!sorted.length) return { labels: [], data: [], latest: null, change7: null, change30: null }
+
+  const latest = sorted[sorted.length - 1]
+  const at = (daysAgo) => {
+    const cutoff = Date.now() - daysAgo * 86400000
+    let match = null
+    for (const e of sorted) {
+      if (new Date(e.date).getTime() <= cutoff) match = e
+      else break
+    }
+    return match
+  }
+  const chg = (ref) => (ref ? Math.round((toNum(latest.weight) - toNum(ref.weight)) * 10) / 10 : null)
+
+  return {
+    labels: sorted.map((e) => fmtDate(e.date)),
+    data: sorted.map((e) => toNum(e.weight)),
+    latest: toNum(latest.weight),
+    latestDate: latest.date,
+    change7: chg(at(7)),
+    change30: chg(at(30)),
+  }
+}
+
 /**
  * Muscle-group volume over time.
  * For each logged workout, sum the best-set volume (weight x reps) of every
@@ -246,6 +387,10 @@ export function quickRead(history, exercises) {
 
   const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length
 
+  const climbing = []
+  const dropped = []
+  const flat = []
+
   const { datasets } = muscleGroupVolumeSeries(history, exercises)
   for (const ds of datasets) {
     const series = ds.data.filter((v) => v > 0)
@@ -256,25 +401,39 @@ export function quickRead(history, exercises) {
     const baseline = mean(series.slice(-5, -2))
     if (!baseline) continue
     const change = (recent - baseline) / baseline
-    if (change >= 0.04) {
-      items.push({
-        tone: 'good',
-        title: `${ds.label} volume climbing`,
-        detail: `Recent sessions are up ${Math.round(change * 100)}% vs the block before.`,
-      })
-    } else if (change <= -0.12) {
-      items.push({
-        tone: 'flag',
-        title: `${ds.label} volume down`,
-        detail: `Recent sessions are down ${Math.round(-change * 100)}% vs the block before.`,
-      })
-    } else {
-      items.push({
-        tone: 'watch',
-        title: `${ds.label} holding flat`,
-        detail: `Within ${Math.round(Math.abs(change) * 100)}% of the block before — time for a load bump.`,
-      })
-    }
+    if (change >= 0.04) climbing.push({ label: ds.label, pct: Math.round(change * 100) })
+    else if (change <= -0.12) dropped.push({ label: ds.label, pct: Math.round(-change * 100) })
+    else flat.push(ds.label)
+  }
+
+  // strongest mover of each kind, individually
+  climbing.sort((a, b) => b.pct - a.pct)
+  dropped.sort((a, b) => b.pct - a.pct)
+  if (climbing[0]) {
+    items.push({
+      tone: 'good',
+      title: `${climbing[0].label} volume climbing`,
+      detail: `Recent sessions up ${climbing[0].pct}% vs the block before${
+        climbing.length > 1 ? ` (also ${climbing.slice(1).map((c) => c.label).join(', ')})` : ''
+      }.`,
+    })
+  }
+  if (dropped[0]) {
+    items.push({
+      tone: 'flag',
+      title: `${dropped[0].label} volume down`,
+      detail: `Recent sessions down ${dropped[0].pct}% vs the block before${
+        dropped.length > 1 ? ` (also ${dropped.slice(1).map((c) => c.label).join(', ')})` : ''
+      }.`,
+    })
+  }
+  // all flat groups roll up into a single line
+  if (flat.length) {
+    items.push({
+      tone: 'watch',
+      title: flat.length === 1 ? `${flat[0]} holding flat` : `${flat.length} groups holding flat`,
+      detail: `${flat.join(', ')} — steady load for a while now; consider a bump.`,
+    })
   }
 
   const anomalies = []

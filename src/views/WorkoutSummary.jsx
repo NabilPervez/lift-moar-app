@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { formatDuration } from '../lib/analytics'
+import { buzz, HAPTIC } from '../lib/haptics'
 
 function Stat({ value, label, accent, delay }) {
   return (
@@ -14,6 +16,10 @@ function Stat({ value, label, accent, delay }) {
 
 export default function WorkoutSummary({ summary, onDone }) {
   const { name, durationMs, totalVolume, completedSets, prs, lifts } = summary
+
+  useEffect(() => {
+    buzz(prs.length ? HAPTIC.pr : HAPTIC.complete)
+  }, [prs.length])
 
   return (
     <div className="min-h-screen pb-28">

@@ -1,6 +1,72 @@
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import Header from '../components/Header'
 import TemplateSummaryCard from '../components/TemplateSummaryCard'
 import { DAYS } from '../lib/constants'
+
+function SortableTemplateCard({ template, exercises, days, onEdit, onDelete }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: template.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 20 : undefined,
+  }
+  return (
+    <div ref={setNodeRef} style={style} className={isDragging ? 'opacity-90' : ''}>
+      <TemplateSummaryCard
+        template={template}
+        exercises={exercises}
+        actions={
+          <>
+            <button
+              ref={setActivatorNodeRef}
+              {...attributes}
+              {...listeners}
+              aria-label={`Reorder ${template.name}`}
+              className="tap w-9 h-9 flex items-center justify-center text-gray-500 hover:text-gray-300 cursor-grab active:cursor-grabbing touch-none"
+            >
+              &#8942;&#8942;
+            </button>
+            <button
+              aria-label={`Edit ${template.name}`}
+              onClick={() => onEdit(template)}
+              className="tap w-9 h-9 flex items-center justify-center text-blue-400 rounded-full hover:bg-white/5"
+            >
+              &#9998;
+            </button>
+            <button
+              aria-label={`Delete ${template.name}`}
+              onClick={() => onDelete(template.id)}
+              className="tap w-9 h-9 flex items-center justify-center text-red-400 rounded-full hover:bg-white/5"
+            >
+              &#128465;
+            </button>
+          </>
+        }
+        footer={
+          days.length ? (
+            <div className="text-xs text-blue-400 font-semibold">Scheduled: {days.join(', ')}</div>
+          ) : null
+        }
+      />
+    </div>
+  )
+}
 
 export default function TemplatesView({
   templates,
@@ -11,8 +77,22 @@ export default function TemplatesView({
   onEdit,
   onDelete,
   onDuplicate,
+  onReorder,
   onManageExercises,
 }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
+
+  const handleDragEnd = ({ active, over }) => {
+    if (!over || active.id === over.id) return
+    const from = templates.findIndex((t) => t.id === active.id)
+    const to = templates.findIndex((t) => t.id === over.id)
+    if (from < 0 || to < 0) return
+    onReorder(arrayMove(templates, from, to))
+  }
+
   return (
     <div className="pb-28">
       <Header title="Templates" subtitle="Build and manage your routines" />
@@ -36,47 +116,32 @@ export default function TemplatesView({
         <h2 className="text-sm font-bold uppercase tracking-wider text-gray-400">Your Templates</h2>
         <span className="text-xs text-gray-600 num">{templates.length}</span>
       </div>
-      <div className="px-4 space-y-3 mb-8">
-        {templates.length === 0 && (
+      <div className="px-4 mb-8">
+        {templates.length === 0 ? (
           <p className="text-gray-500 italic text-sm">
             None yet — create one, or duplicate a pre-made workout below.
           </p>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext
+              items={templates.map((t) => t.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-3">
+                {templates.map((t) => (
+                  <SortableTemplateCard
+                    key={t.id}
+                    template={t}
+                    exercises={exercises}
+                    days={DAYS.filter((d) => schedule[d] === t.id)}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
-        {templates.map((t) => {
-          const days = DAYS.filter((d) => schedule[d] === t.id)
-          return (
-            <TemplateSummaryCard
-              key={t.id}
-              template={t}
-              exercises={exercises}
-              actions={
-                <>
-                  <button
-                    aria-label={`Edit ${t.name}`}
-                    onClick={() => onEdit(t)}
-                    className="tap w-9 h-9 flex items-center justify-center text-blue-400 rounded-full hover:bg-white/5"
-                  >
-                    &#9998;
-                  </button>
-                  <button
-                    aria-label={`Delete ${t.name}`}
-                    onClick={() => onDelete(t.id)}
-                    className="tap w-9 h-9 flex items-center justify-center text-red-400 rounded-full hover:bg-white/5"
-                  >
-                    &#128465;
-                  </button>
-                </>
-              }
-              footer={
-                days.length ? (
-                  <div className="text-xs text-blue-400 font-semibold">
-                    Scheduled: {days.join(', ')}
-                  </div>
-                ) : null
-              }
-            />
-          )
-        })}
       </div>
 
       {/* ---------- Pre-made ---------- */}
