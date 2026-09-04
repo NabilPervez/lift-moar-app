@@ -4,7 +4,7 @@
 templates, scheduling a training week, running guided sessions with a rest timer,
 and tracking progress over time.
 
-Live: https://lift-moar.netlify.app/
+Live: https://lift-more.netlify.app/
 
 ## Stack
 

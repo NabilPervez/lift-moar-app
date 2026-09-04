@@ -1,6 +1,6 @@
 import { formatDuration } from './analytics'
 
-export const APP_URL = 'https://lift-moar.netlify.app/'
+export const APP_URL = 'https://lift-more.netlify.app/'
 
 /** Plain-text recap of a finished workout, suitable for copy/SMS/WhatsApp/export. */
 export function buildShareText(summary) {
