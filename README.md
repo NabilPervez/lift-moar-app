@@ -19,7 +19,8 @@ Live: https://lift-moar.netlify.app/
 - ~155-exercise starter library + a ready-made Upper/Lower/Bodyweight plan
 - 20-workout pre-made library (`premadeTemplates.js`) — assignable, duplicable
 - In-progress workouts persist across reloads; wall-clock rest timer with notification
-- Post-workout summary (duration, volume, sets, e1RM personal records)
+- Post-workout summary (duration, volume, sets, e1RM personal records) with
+  Copy / Text / WhatsApp / Save-to-file sharing (`lib/share.js`)
 - Per-exercise history + progression chart, reachable from any lift name
 - Bodyweight log, consistency streak + heatmap, per-workout / per-exercise notes
 - Undo toasts on every delete; first-run onboarding + a generated sample block
@@ -77,32 +78,42 @@ src/
     premadeTemplates.js 20 read-only built-in workouts (never persisted)
     mockHistory.js      Generated ~10-week sample training block (fresh-install seed)
     audio.js            Rest-timer chime + time formatting
-    analytics.js        Progress dashboard + post-workout summary derivation
+    haptics.js           Vibration helper, gated by settings.haptics
+    notify.js            Rest-timer Notification permission + dispatch
+    share.js              Share-text builder + copy/sms/whatsapp/download helpers
+    analytics.js        Progress dashboard + post-workout summary + consistency/bodyweight derivation
   components/
     BottomNav.jsx       Primary tab bar (Schedule / Templates / Progress / Settings)
     Header.jsx
     Pill.jsx            Muscle-group chip
-    TargetingBars.jsx   Muscle-load mini bar chart
+    TargetingBars.jsx   Muscle-load mini bar chart (animated fill)
     WeeklyCoverage.jsx  Whole-week muscle-group coverage bar chart (Schedule page)
     TemplateSummaryCard.jsx  Reusable template card (name, theme, counts, bars)
     ConfirmButton.jsx   Two-tap button for destructive actions (no window.confirm)
+    Toast.jsx             Bottom toast with an optional Undo action
     Onboarding.jsx      First-run walkthrough (replayable from Settings)
+    A2HSBanner.jsx        Dismissible install prompt (Android beforeinstallprompt / iOS card)
+    ConsistencyCard.jsx   Week streak + this-week/month + 12-week heatmap
+    BodyweightCard.jsx    Latest weight, 7d/30d change, trend chart
+    LogBodyweightModal.jsx
+    LiftLineChart.jsx     Shared themed Chart.js line chart (Progress + exercise detail)
     RestTimer.jsx
     ExercisePickerModal.jsx
     NewExerciseModal.jsx
     SwapModal.jsx
     WorkoutExerciseCard.jsx  Draggable exercise card used in a live workout
-    WorkoutDetailModal.jsx   Full set-by-set breakdown + delete
+    WorkoutDetailModal.jsx   Full set-by-set breakdown, repeat, delete
   views/
     ScheduleView.jsx
     TemplatePickerPage.jsx   Full-page assign flow (Your Templates + Pre-Made)
-    TemplatesView.jsx        Two sections: user-made, then pre-made
-    TemplateEditor.jsx
+    TemplatesView.jsx        Two sections: user-made (drag-reorderable), then pre-made
+    TemplateEditor.jsx        Drag-reorder exercises (dnd-kit)
     ExerciseLibraryManager.jsx
+    ExerciseDetailModal.jsx   Best set / e1RM / progression chart / session history for one lift
     HistoryView.jsx     Logged workouts, tap a row for full detail
-    ActiveWorkout.jsx
-    WorkoutSummary.jsx  Post-workout recap (duration, volume, sets, PRs)
-    DashboardView.jsx   Progress dashboard (Quick Read + charts + recent workouts)
+    ActiveWorkout.jsx    Persists to flt_active_v1; wall-clock rest timer; notes
+    WorkoutSummary.jsx  Post-workout recap (duration, volume, sets, PRs) + share row
+    DashboardView.jsx   Progress dashboard (consistency, Quick Read, bodyweight, charts, recent workouts)
     SettingsView.jsx    Theme toggle, workout-history JSON import/export
 ```
 

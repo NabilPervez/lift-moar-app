@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { formatDuration } from '../lib/analytics'
 import { buzz, HAPTIC } from '../lib/haptics'
+import { buildShareText, copyText, downloadText, shareFilename, smsHref, whatsappHref } from '../lib/share'
 
 function Stat({ value, label, accent, delay }) {
   return (
@@ -14,12 +15,59 @@ function Stat({ value, label, accent, delay }) {
   )
 }
 
+function ShareAction({ icon, label, href, onClick, accent }) {
+  const className = `tap flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border transition-colors ${
+    accent
+      ? 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/15'
+      : 'bg-surface-800 border-white/5 hover:bg-white/5'
+  }`
+  const content = (
+    <>
+      <span className="text-xl leading-none">{icon}</span>
+      <span className="text-[11px] font-semibold text-gray-300">{label}</span>
+    </>
+  )
+  // Real <a> navigation for sms:/https: links — far more reliably honoured by
+  // mobile browsers and popup blockers than a JS-triggered window.open().
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" onClick={onClick} className={className}>
+        {content}
+      </a>
+    )
+  }
+  return (
+    <button onClick={onClick} className={className}>
+      {content}
+    </button>
+  )
+}
+
 export default function WorkoutSummary({ summary, onDone }) {
   const { name, durationMs, totalVolume, completedSets, prs, lifts } = summary
+  const [copied, setCopied] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     buzz(prs.length ? HAPTIC.pr : HAPTIC.complete)
   }, [prs.length])
+
+  const shareText = buildShareText(summary)
+
+  const handleCopy = async () => {
+    const ok = await copyText(shareText)
+    if (ok) {
+      buzz(HAPTIC.tick)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    }
+  }
+  const handleSave = () => {
+    downloadText(shareFilename(summary), shareText)
+    buzz(HAPTIC.tick)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 1800)
+  }
 
   return (
     <div className="min-h-screen pb-28">
@@ -91,7 +139,25 @@ export default function WorkoutSummary({ summary, onDone }) {
         )}
       </div>
 
-      <div className="px-4 mt-6 rise-in" style={{ animationDelay: '300ms' }}>
+      <div className="px-4 mt-4 rise-in" style={{ animationDelay: '290ms' }}>
+        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+          Share this session
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          <ShareAction icon={copied ? '✓' : '📋'} label={copied ? 'Copied' : 'Copy'} onClick={handleCopy} />
+          <ShareAction icon="💬" label="Text" href={smsHref(shareText)} onClick={() => buzz(HAPTIC.tick)} />
+          <ShareAction
+            icon="💬"
+            label="WhatsApp"
+            href={whatsappHref(shareText)}
+            accent
+            onClick={() => buzz(HAPTIC.tick)}
+          />
+          <ShareAction icon={saved ? '✓' : '⬇'} label={saved ? 'Saved' : 'Save'} onClick={handleSave} />
+        </div>
+      </div>
+
+      <div className="px-4 mt-6 rise-in" style={{ animationDelay: '320ms' }}>
         <button
           onClick={onDone}
           className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-transform text-white font-bold py-4 rounded-xl text-lg"
