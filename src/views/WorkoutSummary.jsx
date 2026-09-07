@@ -126,12 +126,20 @@ export default function WorkoutSummary({ summary, onDone }) {
                   <div className="font-semibold truncate">{l.name}</div>
                   <div className="text-gray-500 text-xs num">
                     {l.sets} set{l.sets === 1 ? '' : 's'}
-                    {l.topSet ? ` · top ${l.topSet.weight}×${l.topSet.reps}` : ''}
+                    {l.topSet && l.topSet.reps
+                      ? l.bodyweight
+                        ? ` · top ${l.topSet.reps} reps`
+                        : ` · top ${l.topSet.weight}×${l.topSet.reps}`
+                      : ''}
                   </div>
                 </div>
                 <div className="text-right flex-shrink-0 ml-3">
-                  <div className="num font-bold">{l.volume.toLocaleString()}</div>
-                  <div className="text-[10px] text-gray-500 uppercase">lb vol</div>
+                  <div className="num font-bold">
+                    {l.bodyweight ? 'BW' : l.volume > 0 ? l.volume.toLocaleString() : '—'}
+                  </div>
+                  <div className="text-[10px] text-gray-500 uppercase">
+                    {l.bodyweight ? 'bodyweight' : 'lb vol'}
+                  </div>
                 </div>
               </div>
             ))}

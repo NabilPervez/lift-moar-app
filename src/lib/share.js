@@ -30,11 +30,13 @@ export function buildShareText(summary) {
     lines.push('')
     lines.push('Lifted:')
     for (const l of lifts) {
-      lines.push(
-        `• ${l.name} — ${l.sets} set${l.sets === 1 ? '' : 's'}${
-          l.topSet ? `, top ${l.topSet.weight}×${l.topSet.reps}` : ''
-        }`,
-      )
+      const top =
+        l.topSet && l.topSet.reps
+          ? l.bodyweight
+            ? `, top ${l.topSet.reps} reps`
+            : `, top ${l.topSet.weight}×${l.topSet.reps}`
+          : ''
+      lines.push(`• ${l.name} — ${l.sets} set${l.sets === 1 ? '' : 's'}${top}`)
     }
   }
 

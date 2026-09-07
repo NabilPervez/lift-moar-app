@@ -65,12 +65,15 @@ export function fmtDate(iso) {
 }
 
 export function formatDuration(ms) {
-  if (ms == null || !Number.isFinite(ms)) return '—'
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return '—'
   const totalMin = Math.max(1, Math.round(ms / 60000))
   if (totalMin < 60) return `${totalMin} min`
   const h = Math.floor(totalMin / 60)
   const m = totalMin % 60
-  return m ? `${h}h ${m}m` : `${h}h`
+  if (h < 24) return m ? `${h}h ${m}m` : `${h}h`
+  const d = Math.floor(h / 24)
+  const rh = h % 24
+  return rh ? `${d}d ${rh}h` : `${d}d`
 }
 
 const epley = (w, r) => w * (1 + r / 30)
@@ -99,20 +102,39 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
   const lifts = []
 
   for (const ex of workout.exercises) {
-    const done = (ex.sets || []).filter(
-      (s) => s.completed && toNum(s.weight) > 0 && toNum(s.reps) > 0,
-    )
-    completedSets += (ex.sets || []).filter((s) => s.completed).length
-    const vol = done.reduce((v, s) => v + toNum(s.weight) * toNum(s.reps), 0)
-    totalVolume += vol
-    const topSet = done.length
-      ? done.reduce((b, s) => (toNum(s.weight) >= toNum(b.weight) ? s : b))
-      : null
-    const top = topSet ? { weight: toNum(topSet.weight), reps: toNum(topSet.reps) } : null
+    // Every ticked set counts as work done — bodyweight moves and holds carry
+    // no load but they still happened, so "sets done" always equals the sum of
+    // the per-lift set counts below.
+    const done = (ex.sets || []).filter((s) => s.completed)
+    if (!done.length) continue
+    completedSets += done.length
 
-    if (done.length) {
-      lifts.push({ name: ex.name || '', sets: done.length, volume: Math.round(vol), topSet: top })
-    }
+    const weighted = done.filter((s) => toNum(s.weight) > 0 && toNum(s.reps) > 0)
+    const vol = weighted.reduce((v, s) => v + toNum(s.weight) * toNum(s.reps), 0)
+    totalVolume += vol
+
+    // heaviest set wins; ties break toward the one with more reps
+    const pickBest = (list, score) =>
+      list.reduce((b, s) => {
+        const sv = score(s)
+        const bv = score(b)
+        if (sv > bv) return s
+        if (sv === bv && toNum(s.reps) > toNum(b.reps)) return s
+        return b
+      })
+    const topSet = weighted.length
+      ? pickBest(weighted, (s) => toNum(s.weight))
+      : pickBest(done, (s) => toNum(s.reps))
+    const top = { weight: toNum(topSet.weight), reps: toNum(topSet.reps) }
+
+    lifts.push({
+      name: ex.name || '',
+      sets: done.length,
+      volume: Math.round(vol),
+      topSet: top,
+      // genuinely load-free work, as opposed to a set that's just missing data
+      bodyweight: weighted.length === 0 && done.every((s) => toNum(s.weight) <= 0),
+    })
 
     const thisBest = bestE1RM(ex)
     if (thisBest > 0) {

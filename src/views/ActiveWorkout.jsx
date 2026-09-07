@@ -95,10 +95,17 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
 
   const remaining = wo.restEndsAt ? Math.max(0, Math.ceil((wo.restEndsAt - now) / 1000)) : 0
 
+  // Most recent session that actually logged this lift; the index is clamped so
+  // every row's "prev" comes from the same session even if set counts differ.
   const getPrev = (exerciseId, setIndex) => {
     for (let i = history.length - 1; i >= 0; i--) {
       const ex = history[i].exercises.find((e) => e.exerciseId === exerciseId)
-      if (ex && ex.sets[setIndex] && ex.sets[setIndex].completed) return ex.sets[setIndex]
+      if (!ex) continue
+      const done = (ex.sets || []).filter(
+        (s) => s.completed && (s.weight !== '' || s.reps !== ''),
+      )
+      if (!done.length) continue
+      return done[Math.min(setIndex, done.length - 1)]
     }
     return null
   }
@@ -130,21 +137,37 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
   }
 
   const toggleComplete = (eIdx, sIdx) => {
-    setWo((w) => {
-      const ex = w.exercises[eIdx]
-      const nowComplete = !ex.sets[sIdx].completed
-      const next = {
-        ...w,
-        exercises: w.exercises.map((e, i) =>
-          i !== eIdx
-            ? e
-            : { ...e, sets: e.sets.map((s, j) => (j !== sIdx ? s : { ...s, completed: nowComplete })) },
-        ),
-      }
-      return next
-    })
     const ex = wo.exercises[eIdx]
-    if (!ex.sets[sIdx].completed) {
+    const nowComplete = !ex.sets[sIdx].completed
+    // The greyed numbers in an empty field are placeholders, not values.
+    // Ticking a set accepts them, so what you saw is what gets logged.
+    const prev = getPrev(ex.exerciseId, sIdx)
+
+    setWo((w) => ({
+      ...w,
+      exercises: w.exercises.map((e, i) =>
+        i !== eIdx
+          ? e
+          : {
+              ...e,
+              sets: e.sets.map((s, j) => {
+                if (j !== sIdx) return s
+                if (!nowComplete) return { ...s, completed: false }
+                return {
+                  ...s,
+                  weight:
+                    s.weight === '' && prev && prev.weight !== '' && prev.weight != null
+                      ? String(prev.weight)
+                      : s.weight,
+                  reps: s.reps === '' ? String(e.reps || 6) : s.reps,
+                  completed: true,
+                }
+              }),
+            },
+      ),
+    }))
+
+    if (nowComplete) {
       buzz(HAPTIC.complete)
       startRest(ex.rest || 90)
     }
@@ -216,7 +239,8 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
             id: wo.id,
             name: wo.name,
             notes: wo.notes,
-            durationMs: Date.now() - wo.startedAt,
+            // reuse the value the summary showed so History matches it exactly
+            durationMs: summary.durationMs,
             exercises: wo.exercises,
           })
         }
