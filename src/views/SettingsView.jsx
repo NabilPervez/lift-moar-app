@@ -65,7 +65,7 @@ export default function SettingsView({
 
   const doExport = () => {
     const payload = {
-      app: 'lift-moar',
+      app: 'lift-more',
       type: 'history',
       version: EXPORT_VERSION,
       exportedAt: new Date().toISOString(),
@@ -73,7 +73,7 @@ export default function SettingsView({
       history,
     }
     const stamp = new Date().toISOString().slice(0, 10)
-    download(`lift-moar-history-${stamp}.json`, JSON.stringify(payload, null, 2))
+    download(`lift-more-history-${stamp}.json`, JSON.stringify(payload, null, 2))
     flash(`Exported ${history.length} workout${history.length === 1 ? '' : 's'}.`)
   }
 

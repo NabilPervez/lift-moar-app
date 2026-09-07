@@ -95,7 +95,8 @@ export function bestE1RM(entryEx) {
  * `priorHistory` must NOT include the workout being summarised.
  */
 export function computeWorkoutSummary(workout, priorHistory, startedAt) {
-  const durationMs = startedAt ? Date.now() - startedAt : null
+  const finishedAt = Date.now()
+  const durationMs = startedAt ? finishedAt - startedAt : null
   let totalVolume = 0
   let completedSets = 0
   const prs = []
@@ -152,6 +153,10 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
 
   return {
     name: workout.name,
+    // when the session ended, and when it began — the share text and the
+    // exported file both stamp themselves with these
+    date: new Date(finishedAt).toISOString(),
+    startedAt: startedAt ? new Date(startedAt).toISOString() : null,
     durationMs,
     totalVolume: Math.round(totalVolume),
     completedSets,

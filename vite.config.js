@@ -36,7 +36,7 @@ export default defineConfig({
       },
       manifest: {
         name: 'Functional Lift Tracker',
-        short_name: 'Lift Moar',
+        short_name: 'Lift More',
         description:
           'Plan your training week, run guided sessions with a rest timer, and track lift progression — all stored on your device.',
         id: '/',

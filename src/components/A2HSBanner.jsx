@@ -55,7 +55,7 @@ export default function A2HSBanner() {
         </div>
         <div className="flex-1 min-w-0 text-sm">
           {deferred ? (
-            <span>Install Lift Moar for full-screen, offline access.</span>
+            <span>Install Lift More for full-screen, offline access.</span>
           ) : (
             <span>
               Add to Home Screen: tap <span className="font-bold">Share</span> then{' '}
