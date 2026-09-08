@@ -99,6 +99,8 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
   const durationMs = startedAt ? finishedAt - startedAt : null
   let totalVolume = 0
   let completedSets = 0
+  let rpeSum = 0
+  let rpeCount = 0
   const prs = []
   const lifts = []
 
@@ -114,6 +116,17 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
     const vol = weighted.reduce((v, s) => v + toNum(s.weight) * toNum(s.reps), 0)
     totalVolume += vol
 
+    // one row per set, in the order they were performed — this is what the
+    // shared text and exported file read out set by set, RPE included
+    const setDetail = done.map((s) => {
+      const rpe = toNum(s.rpe)
+      if (rpe > 0) {
+        rpeSum += rpe
+        rpeCount += 1
+      }
+      return { weight: toNum(s.weight), reps: toNum(s.reps), rpe: rpe > 0 ? rpe : null }
+    })
+
     // heaviest set wins; ties break toward the one with more reps
     const pickBest = (list, score) =>
       list.reduce((b, s) => {
@@ -127,17 +140,21 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
       ? pickBest(weighted, (s) => toNum(s.weight))
       : pickBest(done, (s) => toNum(s.reps))
     const top = { weight: toNum(topSet.weight), reps: toNum(topSet.reps) }
+    const thisBest = bestE1RM(ex)
 
     lifts.push({
       name: ex.name || '',
+      muscles: ex.muscles || [],
+      notes: (ex.notes || '').trim(),
       sets: done.length,
       volume: Math.round(vol),
       topSet: top,
+      e1rm: Math.round(thisBest),
+      setDetail,
       // genuinely load-free work, as opposed to a set that's just missing data
       bodyweight: weighted.length === 0 && done.every((s) => toNum(s.weight) <= 0),
     })
 
-    const thisBest = bestE1RM(ex)
     if (thisBest > 0) {
       let priorBest = 0
       for (const w of priorHistory) {
@@ -153,6 +170,7 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
 
   return {
     name: workout.name,
+    notes: (workout.notes || '').trim(),
     // when the session ended, and when it began — the share text and the
     // exported file both stamp themselves with these
     date: new Date(finishedAt).toISOString(),
@@ -160,6 +178,8 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
     durationMs,
     totalVolume: Math.round(totalVolume),
     completedSets,
+    // session-wide average of every set that carried an RPE, one decimal
+    avgRpe: rpeCount ? Math.round((rpeSum / rpeCount) * 10) / 10 : null,
     prs,
     lifts,
   }

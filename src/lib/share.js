@@ -19,9 +19,23 @@ function stampLine(summary) {
   return `${fmtDate(end)}, ${fmtTime(end)}`
 }
 
-/** Plain-text recap of a finished workout, suitable for copy/SMS/WhatsApp/export. */
+/** One performed set, e.g. "35 x 10 @ RPE 8" or "12 reps @ RPE 7" (bodyweight). */
+function fmtSet(s, bodyweight) {
+  const rpe = s.rpe ? ` @ RPE ${s.rpe}` : ''
+  const loadless = bodyweight || (!s.weight && s.reps)
+  if (loadless) return `${s.reps} rep${s.reps === 1 ? '' : 's'}${rpe}`
+  if (s.weight && s.reps) return `${s.weight} x ${s.reps}${rpe}`
+  if (s.weight) return `${s.weight} lb${rpe}`
+  return `done${rpe}`
+}
+
+/**
+ * Plain-text training log for a finished workout — copy / SMS / WhatsApp / export.
+ * Reads set by set with RPE so it stands on its own as a record someone else
+ * (a coach, a training partner, future you) can follow.
+ */
 export function buildShareText(summary) {
-  const { name, durationMs, totalVolume, completedSets, prs, lifts } = summary
+  const { name, notes, durationMs, totalVolume, completedSets, avgRpe, prs, lifts } = summary
   const lines = []
 
   lines.push(name)
@@ -32,27 +46,42 @@ export function buildShareText(summary) {
   if (durationMs) bits.push(formatDuration(durationMs))
   bits.push(`${totalVolume.toLocaleString()} lb moved`)
   bits.push(`${completedSets} set${completedSets === 1 ? '' : 's'}`)
+  bits.push(`${lifts.length} exercise${lifts.length === 1 ? '' : 's'}`)
+  if (avgRpe) bits.push(`avg RPE ${avgRpe}`)
   lines.push(bits.join(' | '))
+
+  if (notes) lines.push(`Session notes: ${notes}`)
 
   if (prs.length) {
     lines.push('')
-    lines.push(`${prs.length} PR${prs.length === 1 ? '' : 's'}:`)
+    lines.push(`New PR${prs.length === 1 ? '' : 's'}:`)
     for (const pr of prs) {
-      lines.push(`  ${pr.name}: ${pr.topSet ? `${pr.topSet.weight}x${pr.topSet.reps}` : `e1RM ${pr.e1rm}`}`)
+      const set = pr.topSet && pr.topSet.reps ? `${pr.topSet.weight}x${pr.topSet.reps} ` : ''
+      lines.push(`  ${pr.name}: ${set}(e1RM ${pr.e1rm})`)
     }
   }
 
   if (lifts.length) {
     lines.push('')
-    lines.push('Lifted:')
+    lines.push('Format: weight x reps @ RPE  (RPE = how hard the set felt, 10 = no reps left):')
     for (const l of lifts) {
-      const top =
-        l.topSet && l.topSet.reps
-          ? l.bodyweight
-            ? `, top ${l.topSet.reps} reps`
-            : `, top ${l.topSet.weight}x${l.topSet.reps}`
-          : ''
-      lines.push(`- ${l.name}: ${l.sets} set${l.sets === 1 ? '' : 's'}${top}`)
+      lines.push('')
+      const tags = [...(l.muscles || [])]
+      if (l.bodyweight) tags.push('bodyweight')
+      lines.push(`${l.name}${tags.length ? ` [${tags.join(', ')}]` : ''}`)
+
+      const detail = l.setDetail && l.setDetail.length ? l.setDetail : null
+      if (detail) {
+        detail.forEach((s, i) => lines.push(`  Set ${i + 1}: ${fmtSet(s, l.bodyweight)}`))
+      } else {
+        lines.push(`  ${l.sets} set${l.sets === 1 ? '' : 's'}`)
+      }
+
+      const tail = []
+      if (!l.bodyweight && l.volume > 0) tail.push(`volume ${l.volume.toLocaleString()} lb`)
+      if (l.e1rm > 0) tail.push(`best e1RM ${l.e1rm}`)
+      if (tail.length) lines.push(`  (${tail.join(', ')})`)
+      if (l.notes) lines.push(`  Note: ${l.notes}`)
     }
   }
 
