@@ -14,6 +14,7 @@ import Onboarding from './components/Onboarding'
 import { LS_KEYS, loadLS, saveLS, removeLS, uid } from './lib/storage'
 import {
   DEFAULT_EXERCISES,
+  buildSessionExercise,
   exById,
   makeDefaultSchedule,
   makeDefaultTemplates,
@@ -26,25 +27,6 @@ import { getSettings, patchSettings } from './lib/settings'
 // Chart.js-heavy views load on demand
 const DashboardView = lazy(() => import('./views/DashboardView'))
 const ExerciseDetailModal = lazy(() => import('./views/ExerciseDetailModal'))
-
-const buildSessionExercise = (item, exercises) => {
-  const ex = exById(exercises, item.exerciseId) || { name: item.name || 'Exercise', muscles: [] }
-  return {
-    key: uid('we'),
-    exerciseId: item.exerciseId,
-    name: ex.name,
-    muscles: ex.muscles,
-    rest: item.rest || 90,
-    reps: item.reps,
-    notes: '',
-    sets: Array.from({ length: item.targetSets || 3 }).map(() => ({
-      weight: '',
-      reps: '',
-      rpe: '',
-      completed: false,
-    })),
-  }
-}
 
 export default function App() {
   const [exercises, setExercises] = useState(() => loadLS(LS_KEYS.exercises, DEFAULT_EXERCISES))

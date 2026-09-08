@@ -1,3 +1,5 @@
+import { uid } from './storage'
+
 export const EQUIPMENT = ['Barbell', 'Dumbbell', 'Kettlebell', 'Machine', 'Cable', 'Bodyweight', 'Other']
 
 export const DEFAULT_EXERCISES = [
@@ -161,6 +163,30 @@ export const DEFAULT_EXERCISES = [
 ]
 
 export const exById = (list, id) => list.find((e) => e.id === id)
+
+/**
+ * Expand one template/plan row `{ exerciseId, targetSets, reps, rest }` into a
+ * live session exercise with blank sets. Used both when starting a workout and
+ * when adding a lift mid-session.
+ */
+export function buildSessionExercise(item, exercises) {
+  const ex = exById(exercises, item.exerciseId) || { name: item.name || 'Exercise', muscles: [] }
+  return {
+    key: uid('we'),
+    exerciseId: item.exerciseId,
+    name: ex.name,
+    muscles: ex.muscles,
+    rest: item.rest || 90,
+    reps: item.reps,
+    notes: '',
+    sets: Array.from({ length: item.targetSets || 3 }).map(() => ({
+      weight: '',
+      reps: '',
+      rpe: '',
+      completed: false,
+    })),
+  }
+}
 
 /**
  * Count how many exercises in a list target each muscle.

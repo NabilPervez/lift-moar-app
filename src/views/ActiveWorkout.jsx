@@ -18,8 +18,9 @@ import SwapModal from '../components/SwapModal'
 import TargetingBars from '../components/TargetingBars'
 import WorkoutExerciseCard from '../components/WorkoutExerciseCard'
 import ConfirmButton from '../components/ConfirmButton'
+import ExercisePickerModal from '../components/ExercisePickerModal'
 import WorkoutSummary from './WorkoutSummary'
-import { exById, muscleLoad } from '../lib/exercises'
+import { buildSessionExercise, exById, muscleLoad } from '../lib/exercises'
 import { computeWorkoutSummary } from '../lib/analytics'
 import { uid } from '../lib/storage'
 import { getSettings, patchSettings } from '../lib/settings'
@@ -45,6 +46,7 @@ const normalize = (s) => ({
 export default function ActiveWorkout({ session, exercises, history, onChange, onFinish, onCancel, onOpenExercise }) {
   const [wo, setWo] = useState(() => normalize(session))
   const [swapKey, setSwapKey] = useState(null)
+  const [addingExercise, setAddingExercise] = useState(false)
   const [now, setNow] = useState(() => Date.now())
   const [flash, setFlash] = useState(false)
   const [showNote, setShowNote] = useState(!!session.notes)
@@ -200,6 +202,21 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
     setSwapKey(null)
   }
 
+  const removeExercise = (key) =>
+    setWo((w) => ({ ...w, exercises: w.exercises.filter((e) => e.key !== key) }))
+
+  const addExercise = (exerciseId) => {
+    setWo((w) => ({
+      ...w,
+      exercises: [
+        ...w.exercises,
+        buildSessionExercise({ exerciseId, targetSets: 3, reps: 8, rest: 90 }, exercises),
+      ],
+    }))
+    setAddingExercise(false)
+    buzz(HAPTIC.tick)
+  }
+
   const handleDragEnd = ({ active, over }) => {
     if (!over || active.id === over.id) return
     setWo((w) => {
@@ -324,12 +341,20 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
                   addSet={addSet}
                   removeSet={removeSet}
                   onSwap={setSwapKey}
+                  onRemove={removeExercise}
                   onOpenExercise={onOpenExercise}
                 />
               ))}
             </div>
           </SortableContext>
         </DndContext>
+
+        <button
+          onClick={() => setAddingExercise(true)}
+          className="tap mt-4 w-full border-2 border-dashed border-white/10 text-gray-400 hover:text-white hover:border-white/20 font-semibold py-4 rounded-2xl transition-colors"
+        >
+          + Add Exercise
+        </button>
       </div>
 
       {/* sticky bottom bar: rest timer (when resting) sits above the Finish button */}
@@ -370,6 +395,15 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
           exercises={exercises}
           onSelect={doSwap}
           onClose={() => setSwapKey(null)}
+        />
+      )}
+
+      {addingExercise && (
+        <ExercisePickerModal
+          exercises={exercises}
+          title="Add an exercise"
+          onSelect={addExercise}
+          onClose={() => setAddingExercise(false)}
         />
       )}
     </div>

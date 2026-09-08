@@ -2,7 +2,25 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import Pill from './Pill'
+import ConfirmButton from './ConfirmButton'
 import { exById } from '../lib/exercises'
+
+const TrashIcon = (
+  <svg
+    viewBox="0 0 24 24"
+    width="15"
+    height="15"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+)
 
 export default function WorkoutExerciseCard({
   exercise,
@@ -15,6 +33,7 @@ export default function WorkoutExerciseCard({
   addSet,
   removeSet,
   onSwap,
+  onRemove,
   onOpenExercise,
 }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
@@ -71,10 +90,22 @@ export default function WorkoutExerciseCard({
           <button
             onClick={() => onSwap(exercise.key)}
             aria-label={`Swap ${exMeta.name}`}
-            className="tap text-xs font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10 px-3 py-1.5 rounded-full"
+            title="Swap exercise"
+            className="tap w-8 h-8 flex items-center justify-center rounded-full text-base font-bold text-blue-400 hover:text-blue-300 bg-blue-500/10"
           >
-            &#8646; Swap
+            &#8646;
           </button>
+          {onRemove && (
+            <ConfirmButton
+              onConfirm={() => onRemove(exercise.key)}
+              ariaLabel={`Remove ${exMeta.name}`}
+              confirmLabel={TrashIcon}
+              className="tap w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-red-400"
+              armedClassName="tap w-8 h-8 flex items-center justify-center rounded-full text-white bg-red-600"
+            >
+              {TrashIcon}
+            </ConfirmButton>
+          )}
         </div>
       </div>
       <div className="flex flex-wrap gap-1 mb-3">
