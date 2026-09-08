@@ -61,10 +61,16 @@ button, .tap { min-height: 44px; min-width: 44px; }
 /* bar-graph fill: width is driven inline; this just eases changes to it */
 .bar-fill { transition: width 550ms cubic-bezier(0.16, 1, 0.3, 1); }
 
+/* sparkline draw-on: pathLength="1" normalises the length so one rule fits any
+   path. No fill-mode surprises — if it never runs the line is simply whole. */
+@keyframes sparkDraw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.spark-draw { stroke-dasharray: 1; animation: sparkDraw 700ms ease-out 120ms both; }
+
 @media (prefers-reduced-motion: reduce) {
   .screen-fade, .rise-in, .slide-in-right, .slide-in-left,
-  .flash-cue, .slide-up, .pop-in { animation: none !important; }
+  .flash-cue, .slide-up, .pop-in, .spark-draw { animation: none !important; }
   .bar-fill { transition: none !important; }
+  .spark-draw { stroke-dasharray: none; }
 }
 
 /* ============================== LIGHT-MODE UTILITY REMAPS ==============================

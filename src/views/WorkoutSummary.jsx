@@ -1,7 +1,19 @@
-import { useEffect, useState } from 'react'
-import { formatDuration } from '../lib/analytics'
+import { useEffect, useMemo, useState } from 'react'
+import { formatDuration, liftRecentTrend } from '../lib/analytics'
 import { buzz, HAPTIC } from '../lib/haptics'
 import { buildShareText, copyText, downloadText, shareFilename, smsHref, whatsappHref } from '../lib/share'
+import { celebrate } from '../lib/celebrate'
+import Sparkline from '../components/Sparkline'
+import liftCompleteSound from '../assets/lift-complete.mp3'
+
+// Module scope so React 18 StrictMode's double-mount (dev) — and any later
+// re-render — doesn't re-fire the sound or the celebration. Keyed on the
+// session's finish time so a genuinely new workout celebrates again.
+let celebratedFor = null
+
+const RISE = '#10b981'
+const FALL = '#f59e0b'
+const FLAT = '#3b82f6'
 
 function Stat({ value, label, accent, delay }) {
   return (
@@ -43,14 +55,82 @@ function ShareAction({ icon, label, href, onClick, accent }) {
   )
 }
 
-export default function WorkoutSummary({ summary, onDone }) {
+function LiftTrend({ trend }) {
+  if (!trend) return null
+  if (trend.isFirst) {
+    return (
+      <div className="mt-2 text-[11px] text-gray-500 italic">
+        First time logging this — the trend line starts next session.
+      </div>
+    )
+  }
+  const { delta, metricLabel, sessions, values } = trend
+  const color = delta > 0 ? RISE : delta < 0 ? FALL : FLAT
+  const deltaText =
+    delta > 0
+      ? `+${delta} ${metricLabel}`
+      : delta < 0
+        ? `${delta} ${metricLabel}`
+        : `no change`
+  const deltaClass =
+    delta > 0 ? 'text-emerald-400' : delta < 0 ? 'text-amber-400' : 'text-gray-500'
+
+  return (
+    <div className="mt-2.5">
+      <Sparkline values={values} color={color} height={40} />
+      <div className="flex items-center justify-between mt-1 text-[11px]">
+        <span className="text-gray-500">
+          last {sessions} session{sessions === 1 ? '' : 's'} · {metricLabel}
+        </span>
+        <span className={`num font-semibold ${deltaClass}`}>
+          {delta > 0 ? '↑ ' : delta < 0 ? '↓ ' : ''}
+          {deltaText}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+export default function WorkoutSummary({ summary, history = [], onDone }) {
   const { name, durationMs, totalVolume, completedSets, prs, lifts } = summary
   const [copied, setCopied] = useState(false)
   const [saved, setSaved] = useState(false)
 
+  // per-lift progression across the last 4 sessions, today included
+  const trends = useMemo(() => {
+    const map = {}
+    for (const l of lifts) {
+      if (!l.exerciseId) continue
+      map[l.exerciseId] = liftRecentTrend(history, l.exerciseId, l, 4)
+    }
+    return map
+  }, [lifts, history])
+
+  // Sound + haptics + particle celebration, exactly once per finished session.
+  // The setTimeout(0) clears StrictMode's synchronous mount→unmount→mount (dev):
+  // the first pass's timer is cancelled by its cleanup, the surviving pass's
+  // runs. The module guard then blocks any later re-fire (a re-render, tabbing
+  // back) while still resetting for a genuinely new session.
   useEffect(() => {
-    buzz(prs.length ? HAPTIC.pr : HAPTIC.complete)
-  }, [prs.length])
+    if (celebratedFor === summary.date) return
+    const kickoff = setTimeout(() => {
+      if (celebratedFor === summary.date) return
+      celebratedFor = summary.date
+
+      try {
+        const audio = new Audio(liftCompleteSound)
+        audio.volume = 0.65
+        audio.play().catch(() => {})
+      } catch (e) {
+        /* no Audio support — silent */
+      }
+
+      buzz(prs.length ? HAPTIC.pr : HAPTIC.complete)
+      celebrate({ pr: prs.length > 0 })
+    }, 0)
+    return () => clearTimeout(kickoff)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summary.date])
 
   const shareText = buildShareText(summary)
 
@@ -114,33 +194,36 @@ export default function WorkoutSummary({ summary, onDone }) {
 
       <div className="px-4 rise-in" style={{ animationDelay: '260ms' }}>
         <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-          What you lifted
+          What you lifted · recent progress
         </div>
         {lifts.length === 0 ? (
           <p className="text-gray-600 italic text-sm">No completed sets logged.</p>
         ) : (
           <div className="bg-surface-800 rounded-2xl border border-white/5 divide-y divide-white/5">
             {lifts.map((l, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3">
-                <div className="min-w-0">
-                  <div className="font-semibold truncate">{l.name}</div>
-                  <div className="text-gray-500 text-xs num">
-                    {l.sets} set{l.sets === 1 ? '' : 's'}
-                    {l.topSet && l.topSet.reps
-                      ? l.bodyweight
-                        ? ` · top ${l.topSet.reps} reps`
-                        : ` · top ${l.topSet.weight}×${l.topSet.reps}`
-                      : ''}
+              <div key={i} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">{l.name}</div>
+                    <div className="text-gray-500 text-xs num">
+                      {l.sets} set{l.sets === 1 ? '' : 's'}
+                      {l.topSet && l.topSet.reps
+                        ? l.bodyweight
+                          ? ` · top ${l.topSet.reps} reps`
+                          : ` · top ${l.topSet.weight}×${l.topSet.reps}`
+                        : ''}
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="num font-bold">
+                      {l.bodyweight ? 'BW' : l.volume > 0 ? l.volume.toLocaleString() : '—'}
+                    </div>
+                    <div className="text-[10px] text-gray-500 uppercase">
+                      {l.bodyweight ? 'bodyweight' : 'lb vol'}
+                    </div>
                   </div>
                 </div>
-                <div className="text-right flex-shrink-0 ml-3">
-                  <div className="num font-bold">
-                    {l.bodyweight ? 'BW' : l.volume > 0 ? l.volume.toLocaleString() : '—'}
-                  </div>
-                  <div className="text-[10px] text-gray-500 uppercase">
-                    {l.bodyweight ? 'bodyweight' : 'lb vol'}
-                  </div>
-                </div>
+                <LiftTrend trend={trends[l.exerciseId]} />
               </div>
             ))}
           </div>

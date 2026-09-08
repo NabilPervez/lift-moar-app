@@ -234,6 +234,7 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
     return (
       <WorkoutSummary
         summary={summary}
+        history={history}
         onDone={() =>
           onFinish({
             id: wo.id,

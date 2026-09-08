@@ -144,6 +144,7 @@ export function computeWorkoutSummary(workout, priorHistory, startedAt) {
 
     lifts.push({
       name: ex.name || '',
+      exerciseId: ex.exerciseId,
       muscles: ex.muscles || [],
       notes: (ex.notes || '').trim(),
       sets: done.length,
@@ -210,6 +211,50 @@ export function exerciseSessions(history, exerciseId) {
       }
     })
     .filter(Boolean)
+}
+
+/**
+ * Up to `n` most recent sessions of one lift, oldest→newest, with today's
+ * numbers (which aren't in `history` yet) appended as the last point. Feeds
+ * the per-lift sparklines on the post-workout summary.
+ *
+ * `todayLift` is one entry from computeWorkoutSummary().lifts.
+ */
+export function liftRecentTrend(history, exerciseId, todayLift, n = 4) {
+  const prior = exerciseSessions(history, exerciseId).map((s) => ({
+    date: s.date,
+    e1rm: s.e1rm,
+    topWeight: s.topWeight,
+    topReps: s.sets.reduce((m, x) => Math.max(m, x.reps), 0),
+    volume: s.volume,
+    today: false,
+  }))
+
+  const points = prior.slice(-(n - 1))
+  points.push({
+    date: (todayLift && todayLift.date) || new Date().toISOString(),
+    e1rm: Math.round((todayLift && todayLift.e1rm) || 0),
+    topWeight: (todayLift && todayLift.topSet && todayLift.topSet.weight) || 0,
+    topReps: (todayLift && todayLift.topSet && todayLift.topSet.reps) || 0,
+    volume: (todayLift && todayLift.volume) || 0,
+    today: true,
+  })
+
+  // bodyweight lifts have no load — track them by top-set reps instead
+  const metric = todayLift && todayLift.bodyweight ? 'topReps' : 'e1rm'
+  const values = points.map((p) => p[metric])
+  const first = values[0]
+  const last = values[values.length - 1]
+
+  return {
+    points,
+    metric,
+    metricLabel: metric === 'topReps' ? 'top reps' : 'e1RM',
+    values,
+    delta: last - first,
+    sessions: points.length,
+    isFirst: points.length < 2,
+  }
 }
 
 /** Headline stats + progression series for one exercise. */
