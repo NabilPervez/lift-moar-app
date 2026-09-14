@@ -20,7 +20,7 @@ import WorkoutExerciseCard from '../components/WorkoutExerciseCard'
 import ConfirmButton from '../components/ConfirmButton'
 import ExercisePickerModal from '../components/ExercisePickerModal'
 import WorkoutSummary from './WorkoutSummary'
-import { buildSessionExercise, exById, muscleLoad } from '../lib/exercises'
+import { buildSessionExercise, exById, hasValue, muscleLoad } from '../lib/exercises'
 import { computeWorkoutSummary } from '../lib/analytics'
 import { uid } from '../lib/storage'
 import { getSettings, patchSettings } from '../lib/settings'
@@ -104,7 +104,7 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
       const ex = history[i].exercises.find((e) => e.exerciseId === exerciseId)
       if (!ex) continue
       const done = (ex.sets || []).filter(
-        (s) => s.completed && (s.weight !== '' || s.reps !== ''),
+        (s) => s.completed && (hasValue(s.weight) || hasValue(s.reps)),
       )
       if (!done.length) continue
       return done[Math.min(setIndex, done.length - 1)]
@@ -142,7 +142,11 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
     const ex = wo.exercises[eIdx]
     const nowComplete = !ex.sets[sIdx].completed
     // The greyed numbers in an empty field are placeholders, not values.
-    // Ticking a set accepts them, so what you saw is what gets logged.
+    // Ticking a set accepts them, so what you saw is what gets logged — and both
+    // numbers must come from the same place the row displayed them: last
+    // session's set. Falling back to the plan's target for reps (as this used
+    // to do unconditionally) silently rewrote real reps and then fed that wrong
+    // number to the next session's "prev", drifting further every week.
     const prev = getPrev(ex.exerciseId, sIdx)
 
     setWo((w) => ({
@@ -158,10 +162,13 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
                 return {
                   ...s,
                   weight:
-                    s.weight === '' && prev && prev.weight !== '' && prev.weight != null
+                    s.weight === '' && hasValue(prev && prev.weight)
                       ? String(prev.weight)
                       : s.weight,
-                  reps: s.reps === '' ? String(e.reps || 6) : s.reps,
+                  reps:
+                    s.reps === ''
+                      ? String(hasValue(prev && prev.reps) ? prev.reps : e.reps || 6)
+                      : s.reps,
                   completed: true,
                 }
               }),
