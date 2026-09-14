@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import Pill from './Pill'
 import ConfirmButton from './ConfirmButton'
-import { exById } from '../lib/exercises'
+import { exById, hasValue } from '../lib/exercises'
 
 const TrashIcon = (
   <svg
@@ -136,6 +136,12 @@ export default function WorkoutExerciseCard({
       {exercise.sets.map((set, sIdx) => {
         const prev = getPrev(exercise.exerciseId, sIdx)
         const isDone = set.completed
+        // Ghost text must match the Prev chip and what ticking commits: last
+        // session's numbers, with the plan's target only as a first-time fallback.
+        const weightGhost = hasValue(prev && prev.weight) ? String(prev.weight) : '0'
+        const repsGhost = hasValue(prev && prev.reps)
+          ? String(prev.reps)
+          : String(exercise.reps || 6)
         const fillFromPrev = () => {
           if (!prev) return
           if (set.weight === '') updateSet(eIdx, sIdx, 'weight', String(prev.weight))
@@ -163,7 +169,7 @@ export default function WorkoutExerciseCard({
                 inputMode="decimal"
                 aria-label={`Weight for set ${sIdx + 1}`}
                 className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder={prev ? String(prev.weight) : '0'}
+                placeholder={weightGhost}
                 value={set.weight}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => updateSet(eIdx, sIdx, 'weight', e.target.value)}
@@ -175,7 +181,7 @@ export default function WorkoutExerciseCard({
                 inputMode="numeric"
                 aria-label={`Reps for set ${sIdx + 1}`}
                 className="w-full bg-surface-700 rounded-lg p-2 text-center num focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder={String(exercise.reps || 6)}
+                placeholder={repsGhost}
                 value={set.reps}
                 onFocus={(e) => e.target.select()}
                 onChange={(e) => updateSet(eIdx, sIdx, 'reps', e.target.value)}

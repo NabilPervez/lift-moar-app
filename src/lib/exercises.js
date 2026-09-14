@@ -165,6 +165,13 @@ export const DEFAULT_EXERCISES = [
 export const exById = (list, id) => list.find((e) => e.id === id)
 
 /**
+ * True when a logged set field (weight / reps) actually holds a value. Blank
+ * inputs are stored as '', and older records can carry null/undefined — both
+ * mean "nothing logged", which is different from a real 0.
+ */
+export const hasValue = (v) => v !== '' && v != null
+
+/**
  * Expand one template/plan row `{ exerciseId, targetSets, reps, rest }` into a
  * live session exercise with blank sets. Used both when starting a workout and
  * when adding a lift mid-session.
