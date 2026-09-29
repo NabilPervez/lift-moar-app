@@ -35,7 +35,7 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'Lift More - Tracking and Visualize',
+        name: 'Lift More: Track & Visualize',
         short_name: 'Lift More',
         description:
           'Plan your training week, run guided sessions with a rest timer, and track lift progression — all stored on your device.',
