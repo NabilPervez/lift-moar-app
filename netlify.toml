@@ -7,3 +7,9 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Digital Asset Links for the Android (TWA) wrapper — must be served as JSON
+[[headers]]
+  for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
