@@ -12,6 +12,8 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2,mp3}'],
         navigateFallback: '/index.html',
+        // Static pages that must not be swapped for the app shell
+        navigateFallbackDenylist: [/^\/privacy/],
         cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
