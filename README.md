@@ -156,6 +156,7 @@ The **Progress** tab derives everything from `flt_history_v1`:
   logged exercise, chosen from a dropdown.
 
 ## Nov 2026 update — light + energy, data safety, celebration
+- **Storage:** IndexedDB (Dexie) is the source of truth, loaded into memory at boot; localStorage is a mirror/fallback. Existing data copies over automatically on first launch. Workouts save the moment you tap Finish.
 - **Data safety:** storage persistence requested after first workout; save failures warn with a one-tap backup; exercises are archived (never deleted) so per-exercise history never orphans or splits; migrations never overwrite your schedule; sample workouts no longer seed real installs; full backup (workouts + exercises + plan + bodyweight) with merge-only restore and a 30-day backup nudge.
 - **PWA:** prompt-style updates that wait until no workout is active; `sw.js`/manifest served `no-cache`; self-hosted Inter; manifest shortcuts + screenshots; OG/Twitter/canonical metadata.
 - **Design:** light theme by default with an electric blue → violet → pink energy gradient; View Transitions between screens (direction-aware, reduced-motion safe); every screen opens at the top.

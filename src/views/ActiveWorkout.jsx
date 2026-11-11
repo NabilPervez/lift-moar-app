@@ -43,7 +43,7 @@ const normalize = (s) => ({
   })),
 })
 
-export default function ActiveWorkout({ session, exercises, history, onChange, onFinish, onCancel, onOpenExercise }) {
+export default function ActiveWorkout({ session, exercises, history, onChange, onRecord, onFinish, onCancel, onOpenExercise }) {
   const [wo, setWo] = useState(() => normalize(session))
   const [swapKey, setSwapKey] = useState(null)
   const [addingExercise, setAddingExercise] = useState(false)
@@ -250,15 +250,26 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
         return { ...e, name: meta ? meta.name : e.name, muscles: meta ? meta.muscles : e.muscles }
       }),
     }
-    setSummary(computeWorkoutSummary(named, history, wo.startedAt))
+    const sum = computeWorkoutSummary(named, history, wo.startedAt)
+    setSummary(sum)
     setWo(named)
+    // save to history now — the celebration screen is a bonus, not a gate
+    onRecord &&
+      onRecord({
+        id: wo.id,
+        name: wo.name,
+        notes: wo.notes,
+        durationMs: sum.durationMs,
+        date: sum.date,
+        exercises: named.exercises,
+      })
   }
 
   if (summary) {
     return (
       <WorkoutSummary
         summary={summary}
-        history={history}
+        history={history.filter((w) => w.id !== wo.id)}
         onDone={() =>
           onFinish({
             id: wo.id,
@@ -266,6 +277,7 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
             notes: wo.notes,
             // reuse the value the summary showed so History matches it exactly
             durationMs: summary.durationMs,
+            date: summary.date,
             exercises: wo.exercises,
           })
         }

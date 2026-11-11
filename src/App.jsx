@@ -198,10 +198,25 @@ export default function App() {
     saveLS(LS_KEYS.activeWorkout, session)
   }
 
-  const finishWorkout = (finished) => {
-    setHistory((h) => [...h, { ...finished, date: new Date().toISOString() }])
+  /* Saved the moment Finish is tapped (2026-11-11) — not after the celebration
+     screen — so closing the app, a share sheet killing the tab, or a crash on
+     that screen can't lose the workout. Keyed by session id: finishing the same
+     session twice (e.g. after a reload) replaces, never duplicates. */
+  const recordWorkout = (finished) => {
+    setHistory((h) => {
+      const entry = { ...finished, date: finished.date || new Date().toISOString() }
+      const i = h.findIndex((w) => w.id === entry.id)
+      if (i < 0) return [...h, entry]
+      const next = h.slice()
+      next[i] = { ...entry, date: h[i].date }
+      return next
+    })
     // first real data on the device → ask the browser not to evict it
     requestPersistentStorage()
+  }
+
+  const finishWorkout = (finished) => {
+    recordWorkout(finished)
     setActiveSession(null)
     removeLS(LS_KEYS.activeWorkout)
   }
@@ -351,6 +366,7 @@ export default function App() {
         exercises={exercises}
         history={history}
         onChange={persistSession}
+        onRecord={recordWorkout}
         onFinish={finishWorkout}
         onCancel={cancelWorkout}
         onOpenExercise={openExercise}
