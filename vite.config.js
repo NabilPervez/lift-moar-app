@@ -27,8 +27,8 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f7f8fc',
-        theme_color: '#f7f8fc',
+        background_color: '#f6f4ec',
+        theme_color: '#f6f4ec',
         categories: ['health', 'fitness', 'lifestyle'],
         shortcuts: [
           { name: "Today's workout", short_name: 'Today', url: '/?view=schedule', icons: [{ src: 'pwa-192.png', sizes: '192x192' }] },

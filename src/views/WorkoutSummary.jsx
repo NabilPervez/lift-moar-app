@@ -50,7 +50,7 @@ function StatChip({ value, display, label, icon, tint, delay }) {
   return (
     <div
       className="chip-in rounded-2xl p-3 text-center border-2 min-w-0"
-      style={{ animationDelay: `${delay}ms`, borderColor: tint, background: `linear-gradient(${tint}14, ${tint}14), #fff`, boxShadow: `0 4px 0 ${tint}33` }}
+      style={{ animationDelay: `${delay}ms`, borderColor: tint, background: `color-mix(in srgb, ${tint} 8%, #fff)`, boxShadow: `0 4px 0 color-mix(in srgb, ${tint} 25%, transparent)` }}
     >
       <div className="text-xl leading-none mb-1" aria-hidden="true">{icon}</div>
       <div className="num font-extrabold text-2xl truncate" style={{ color: tint }}>
@@ -207,12 +207,12 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
   return (
     <div className="min-h-screen pb-10">
       {/* Hero — Duolingo-style: big friendly badge, warm headline, one idea. */}
-      <div className="relative overflow-hidden bg-energy text-white px-4 pt-12 pb-16 safe-top text-center rounded-b-[2.5rem]">
+      <div className="relative overflow-hidden bg-hero px-4 pt-12 pb-16 safe-top text-center rounded-b-[2.5rem]">
         <div aria-hidden="true" className="absolute -top-16 -right-10 w-56 h-56 rounded-full bg-white/15" />
         <div aria-hidden="true" className="absolute -bottom-20 -left-12 w-48 h-48 rounded-full bg-white/10" />
         <div className="relative">
           <div className="bob inline-block">
-            <div className="badge-pop w-28 h-28 mx-auto rounded-full bg-white shadow-xl flex items-center justify-center text-6xl">
+            <div className="badge-pop w-28 h-28 mx-auto rounded-full bg-white shadow-xl ring-4 ring-[color:var(--gold-bright)] flex items-center justify-center text-6xl">
               {prs.length ? '🏆' : '💪'}
             </div>
           </div>
@@ -227,9 +227,9 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
 
       {/* Stat chips overlap the hero */}
       <div className="px-4 -mt-10 relative grid grid-cols-3 gap-2.5 mb-4">
-        <StatChip display={formatDuration(durationMs)} label="Time" icon="⏱" tint="#2f6bff" delay={420} />
-        <StatChip value={totalVolume} label="lb lifted" icon="🏋️" tint="#7b5cff" delay={500} />
-        <StatChip value={completedSets} label="Sets" icon="✅" tint="#12b76a" delay={580} />
+        <StatChip display={formatDuration(durationMs)} label="Time" icon="⏱" tint="var(--brand)" delay={420} />
+        <StatChip value={totalVolume} label="lb lifted" icon="🏋️" tint="var(--gold-deep)" delay={500} />
+        <StatChip value={completedSets} label="Sets" icon="✅" tint="var(--brand-deep)" delay={580} />
       </div>
 
       {/* Streak */}
@@ -274,16 +274,16 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
             <div
               key={i}
               className="chip-in rounded-2xl p-4 flex items-center gap-3 border-2"
-              style={{ animationDelay: `${900 + i * 120}ms`, borderColor: '#f5b400', background: '#fff7d6' }}
+              style={{ animationDelay: `${900 + i * 120}ms`, borderColor: 'var(--gold)', background: 'var(--gold-soft)' }}
             >
               <span className="text-3xl" aria-hidden="true">⭐</span>
               <div className="min-w-0 flex-1">
-                <div className="font-extrabold truncate" style={{ color: '#7a4b00' }}>{pr.name}</div>
-                <div className="num text-[13px]" style={{ color: '#9a6a00' }}>
+                <div className="font-extrabold truncate" style={{ color: 'var(--gold-deep)' }}>{pr.name}</div>
+                <div className="num text-[13px]" style={{ color: 'var(--gold-deep)' }}>
                   {pr.topSet ? `${pr.topSet.weight} × ${pr.topSet.reps}` : ''} · est. 1RM {pr.e1rm} lb
                 </div>
               </div>
-              <span className="text-[13px] font-extrabold px-2.5 py-1 rounded-full" style={{ background: '#f5b400', color: '#fff' }}>
+              <span className="text-[13px] font-extrabold px-2.5 py-1 rounded-full" style={{ background: 'var(--gold)', color: '#fff' }}>
                 PR
               </span>
             </div>
@@ -293,8 +293,8 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
 
       {/* Share — invite, image-first */}
       <div className="px-4 mb-5 chip-in" style={{ animationDelay: '1000ms' }}>
-        <div className="rounded-2xl p-4 text-center border-2 border-dashed" style={{ borderColor: '#c7d4ff', background: '#f3f6ff' }}>
-          <div className="font-extrabold text-lg" style={{ color: '#1e3a8a' }}>Share your win 🎉</div>
+        <div className="rounded-2xl p-4 text-center border-2 border-dashed" style={{ borderColor: 'var(--brand)', background: 'var(--brand-soft)' }}>
+          <div className="font-extrabold text-lg" style={{ color: 'var(--brand-deep)' }}>Share your win 🎉</div>
           <p className="text-[13px] text-gray-500 mb-3">
             Tag a friend — training is easier with a crew.
           </p>
@@ -302,7 +302,7 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
             onClick={handleShareImage}
             disabled={shareState === 'working'}
             className="btn-shine w-full text-white font-extrabold py-4 rounded-2xl text-lg"
-            style={{ background: 'var(--energy)', boxShadow: '0 6px 0 #2a4fd1', color: '#fff' }}
+            style={{ background: 'var(--gold)', boxShadow: '0 6px 0 var(--gold-deep)', color: '#1d1300' }}
           >
             {shareState === 'working'
               ? 'Making your card…'
@@ -364,7 +364,7 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
         <button
           onClick={onDone}
           className="max-w-md mx-auto block w-full text-white font-extrabold py-4 rounded-2xl text-lg"
-          style={{ background: 'var(--win)', boxShadow: '0 6px 0 #0b8a4f', color: '#fff' }}
+          style={{ background: 'var(--brand)', boxShadow: '0 6px 0 var(--brand-deep)', color: '#fff' }}
         >
           Continue
         </button>

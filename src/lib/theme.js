@@ -16,7 +16,7 @@ export function applyTheme(theme) {
   const root = document.documentElement
   root.dataset.theme = theme
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#f7f8fc' : '#0a0f1a')
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#f6f4ec' : '#0a0f1a')
 }
 
 /** Called once at startup (before React renders) to avoid a flash. */

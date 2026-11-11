@@ -30,12 +30,8 @@ export async function renderShareCard({ summary, streak }) {
   const ctx = c.getContext('2d')
   const font = (wt, px) => `${wt} ${px}px "Inter Variable", Inter, system-ui, sans-serif`
 
-  // energy gradient background
-  const g = ctx.createLinearGradient(0, 0, W, H)
-  g.addColorStop(0, '#2f6bff')
-  g.addColorStop(0.55, '#7b5cff')
-  g.addColorStop(1, '#ff4fa3')
-  ctx.fillStyle = g
+  // flat deep green ground, gold accents (matches the app tokens)
+  ctx.fillStyle = '#0f4a2f'
   ctx.fillRect(0, 0, W, H)
 
   // soft blobs
@@ -61,9 +57,9 @@ export async function renderShareCard({ summary, streak }) {
   ctx.fillStyle = '#ffffff'
   ctx.fill()
   const stats = [
-    { v: formatDuration(summary.durationMs), l: 'TIME', col: '#2f6bff' },
-    { v: summary.totalVolume.toLocaleString(), l: 'LB LIFTED', col: '#7b5cff' },
-    { v: String(summary.completedSets), l: 'SETS', col: '#12b76a' },
+    { v: formatDuration(summary.durationMs), l: 'TIME', col: '#1a7a4c' },
+    { v: summary.totalVolume.toLocaleString(), l: 'LB LIFTED', col: '#8a5d00' },
+    { v: String(summary.completedSets), l: 'SETS', col: '#0f4a2f' },
   ]
   stats.forEach((s, i) => {
     const cx = 80 + ((W - 160) / 3) * (i + 0.5)
@@ -82,7 +78,7 @@ export async function renderShareCard({ summary, streak }) {
   ctx.fillText(prLine, W / 2, 880)
 
   if (streak > 1) {
-    ctx.fillStyle = '#fff'
+    ctx.fillStyle = '#f2c14e'
     ctx.font = font(800, 64)
     ctx.fillText(`🔥 ${streak}-week streak`, W / 2, 1090)
   }
