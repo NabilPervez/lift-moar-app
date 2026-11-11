@@ -7,34 +7,15 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png'],
+      registerType: 'prompt',
+      includeAssets: ['favicon.svg', 'favicon-32.png', 'favicon-16.png', 'apple-touch-icon.png', 'og-image.png'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff,woff2,mp3}'],
         navigateFallback: '/index.html',
         // Static pages that must not be swapped for the app shell
         navigateFallbackDenylist: [/^\/privacy/],
         cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
+        // fonts are self-hosted (2026-11-11) — no runtime caching needed
       },
       manifest: {
         name: 'Lift More: Track & Visualize',
@@ -46,9 +27,17 @@ export default defineConfig({
         scope: '/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#0a0f1a',
-        theme_color: '#0a0f1a',
+        background_color: '#f7f8fc',
+        theme_color: '#f7f8fc',
         categories: ['health', 'fitness', 'lifestyle'],
+        shortcuts: [
+          { name: "Today's workout", short_name: 'Today', url: '/?view=schedule', icons: [{ src: 'pwa-192.png', sizes: '192x192' }] },
+          { name: 'Progress', short_name: 'Progress', url: '/?view=dashboard', icons: [{ src: 'pwa-192.png', sizes: '192x192' }] },
+        ],
+        screenshots: [
+          { src: 'screenshot-1.png', sizes: '1080x1920', type: 'image/png', form_factor: 'narrow', label: 'Workout complete' },
+          { src: 'screenshot-wide.png', sizes: '1920x1080', type: 'image/png', form_factor: 'wide', label: 'Lift More' },
+        ],
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },

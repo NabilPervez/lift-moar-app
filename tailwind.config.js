@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        sans: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         // Driven by CSS variables so the light/dark theme can swap them

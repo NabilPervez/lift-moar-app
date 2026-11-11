@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { formatDuration, liftRecentTrend } from '../lib/analytics'
 import { buzz, HAPTIC } from '../lib/haptics'
 import { buildShareText, copyText, downloadText, shareFilename, smsHref, whatsappHref } from '../lib/share'
 import { celebrate } from '../lib/celebrate'
 import Sparkline from '../components/Sparkline'
+import { weekDots, weekStreak, workoutsThisWeek } from '../lib/streak'
+import { shareCard } from '../lib/shareCard'
 import liftCompleteSound from '../assets/lift-complete.mp3'
 
 // Module scope so React 18 StrictMode's double-mount (dev) — and any later
@@ -15,14 +17,46 @@ const RISE = '#10b981'
 const FALL = '#f59e0b'
 const FLAT = '#3b82f6'
 
-function Stat({ value, label, accent, delay }) {
+/** Counts a number up from 0 (eased) — the Duolingo "XP ticking" feel. */
+function useCountUp(target, delay = 0, ms = 900) {
+  const [v, setV] = useState(0)
+  const raf = useRef(0)
+  useEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (reduce || !target) {
+      setV(target)
+      return undefined
+    }
+    let start
+    const t = setTimeout(() => {
+      const step = (now) => {
+        if (start === undefined) start = now
+        const p = Math.min(1, (now - start) / ms)
+        setV(Math.round(target * (1 - Math.pow(1 - p, 3))))
+        if (p < 1) raf.current = requestAnimationFrame(step)
+      }
+      raf.current = requestAnimationFrame(step)
+    }, delay)
+    return () => {
+      clearTimeout(t)
+      cancelAnimationFrame(raf.current)
+    }
+  }, [target, delay, ms])
+  return v
+}
+
+function StatChip({ value, display, label, icon, tint, delay }) {
+  const n = useCountUp(typeof value === 'number' ? value : 0, delay + 200)
   return (
     <div
-      className="bg-surface-800 rounded-2xl border border-white/5 p-4 text-center rise-in"
-      style={{ animationDelay: `${delay}ms` }}
+      className="chip-in rounded-2xl p-3 text-center border-2 min-w-0"
+      style={{ animationDelay: `${delay}ms`, borderColor: tint, background: `linear-gradient(${tint}14, ${tint}14), #fff`, boxShadow: `0 4px 0 ${tint}33` }}
     >
-      <div className={`num font-black text-2xl ${accent || ''}`}>{value}</div>
-      <div className="text-[10px] text-gray-500 uppercase tracking-wide mt-1">{label}</div>
+      <div className="text-xl leading-none mb-1" aria-hidden="true">{icon}</div>
+      <div className="num font-extrabold text-2xl truncate" style={{ color: tint }}>
+        {display ?? n.toLocaleString()}
+      </div>
+      <div className="text-[13px] font-semibold text-gray-500 mt-0.5">{label}</div>
     </div>
   )
 }
@@ -149,51 +183,146 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
     setTimeout(() => setSaved(false), 1800)
   }
 
+  const priorDates = history.map((w) => w.date)
+  const allDates = [...priorDates, summary.date || new Date().toISOString()]
+  const streak = weekStreak(allDates)
+  const dots = weekDots(allDates)
+  const thisWeek = workoutsThisWeek(allDates)
+  const headline = prs.length
+    ? prs.length === 1
+      ? 'New personal record!'
+      : `${prs.length} new personal records!`
+    : streak > 1
+      ? 'Workout crushed!'
+      : 'Great work today!'
+  const [shareState, setShareState] = useState(null)
+  const handleShareImage = async () => {
+    buzz(HAPTIC.tick)
+    setShareState('working')
+    const r = await shareCard({ summary, streak, text: shareText })
+    setShareState(r === 'downloaded' ? 'saved' : r === 'shared' ? 'shared' : null)
+    setTimeout(() => setShareState(null), 2200)
+  }
+
   return (
-    <div className="min-h-screen pb-28">
-      <div className="px-4 pt-10 pb-4 safe-top text-center rise-in">
-        <div className="text-4xl mb-2 pop-in">🏁</div>
-        <h1 className="text-2xl font-black tracking-tight">Workout Complete</h1>
-        <p className="text-gray-500 text-sm mt-1">{name}</p>
-      </div>
-
-      <div className="px-4 grid grid-cols-2 gap-3 mb-3">
-        <Stat value={formatDuration(durationMs)} label="Duration" delay={60} />
-        <Stat value={completedSets} label="Sets Done" accent="text-emerald-400" delay={100} />
-        <Stat value={totalVolume.toLocaleString()} label="Total Weight (lb)" delay={140} />
-        <Stat
-          value={prs.length}
-          label={prs.length === 1 ? 'Personal Record' : 'Personal Records'}
-          accent={prs.length ? 'text-amber-400' : 'text-gray-500'}
-          delay={180}
-        />
-      </div>
-
-      {prs.length > 0 && (
-        <div className="px-4 mb-3 rise-in" style={{ animationDelay: '220ms' }}>
-          <div className="bg-amber-500/10 ring-1 ring-amber-500/30 rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">⭐</span>
-              <span className="font-bold text-amber-300">
-                {prs.length} new personal record{prs.length === 1 ? '' : 's'}
-              </span>
-            </div>
-            <div className="space-y-1.5">
-              {prs.map((pr, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <span className="font-semibold">{pr.name}</span>
-                  <span className="num text-gray-400">
-                    {pr.topSet ? `${pr.topSet.weight}×${pr.topSet.reps}` : ''} · e1RM {pr.e1rm}
-                  </span>
-                </div>
-              ))}
+    <div className="min-h-screen pb-10">
+      {/* Hero — Duolingo-style: big friendly badge, warm headline, one idea. */}
+      <div className="relative overflow-hidden bg-energy text-white px-4 pt-12 pb-16 safe-top text-center rounded-b-[2.5rem]">
+        <div aria-hidden="true" className="absolute -top-16 -right-10 w-56 h-56 rounded-full bg-white/15" />
+        <div aria-hidden="true" className="absolute -bottom-20 -left-12 w-48 h-48 rounded-full bg-white/10" />
+        <div className="relative">
+          <div className="bob inline-block">
+            <div className="badge-pop w-28 h-28 mx-auto rounded-full bg-white shadow-xl flex items-center justify-center text-6xl">
+              {prs.length ? '🏆' : '💪'}
             </div>
           </div>
+          <h1 className="chip-in text-3xl font-extrabold tracking-tight mt-5" style={{ animationDelay: '250ms', color: '#fff' }}>
+            {headline}
+          </h1>
+          <p className="chip-in text-white/90 text-base mt-1" style={{ animationDelay: '330ms', color: 'rgba(255,255,255,.9)' }}>
+            {name} · workout #{history.length + 1}
+          </p>
+        </div>
+      </div>
+
+      {/* Stat chips overlap the hero */}
+      <div className="px-4 -mt-10 relative grid grid-cols-3 gap-2.5 mb-4">
+        <StatChip display={formatDuration(durationMs)} label="Time" icon="⏱" tint="#2f6bff" delay={420} />
+        <StatChip value={totalVolume} label="lb lifted" icon="🏋️" tint="#7b5cff" delay={500} />
+        <StatChip value={completedSets} label="Sets" icon="✅" tint="#12b76a" delay={580} />
+      </div>
+
+      {/* Streak */}
+      <div className="px-4 mb-4 chip-in" style={{ animationDelay: '680ms' }}>
+        <div className="bg-surface-800 rounded-2xl border border-white/5 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="flame text-2xl" aria-hidden="true">🔥</span>
+              <div>
+                <div className="font-extrabold text-lg leading-tight" style={{ color: 'var(--fire)' }}>
+                  {streak > 1 ? `${streak}-week streak` : 'Streak started!'}
+                </div>
+                <div className="text-gray-500 text-[13px]">
+                  {thisWeek} workout{thisWeek === 1 ? '' : 's'} this week
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-7 gap-1.5">
+            {dots.map((d, i) => (
+              <div key={i} className="flex flex-col items-center gap-1">
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold ${d.done ? 'dot-fill text-white' : 'bg-surface-700 text-gray-400'} ${d.today ? 'ring-2 ring-offset-2' : ''}`}
+                  style={{
+                    ...(d.done ? { background: 'var(--fire)', color: '#fff', animationDelay: `${780 + i * 70}ms` } : {}),
+                    ...(d.today ? { '--tw-ring-color': 'var(--fire)' } : {}),
+                  }}
+                >
+                  {d.done ? '✓' : ''}
+                </div>
+                <span className="text-[13px] text-gray-500 font-semibold">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* PR cards */}
+      {prs.length > 0 && (
+        <div className="px-4 mb-4 space-y-2">
+          {prs.map((pr, i) => (
+            <div
+              key={i}
+              className="chip-in rounded-2xl p-4 flex items-center gap-3 border-2"
+              style={{ animationDelay: `${900 + i * 120}ms`, borderColor: '#f5b400', background: '#fff7d6' }}
+            >
+              <span className="text-3xl" aria-hidden="true">⭐</span>
+              <div className="min-w-0 flex-1">
+                <div className="font-extrabold truncate" style={{ color: '#7a4b00' }}>{pr.name}</div>
+                <div className="num text-[13px]" style={{ color: '#9a6a00' }}>
+                  {pr.topSet ? `${pr.topSet.weight} × ${pr.topSet.reps}` : ''} · est. 1RM {pr.e1rm} lb
+                </div>
+              </div>
+              <span className="text-[13px] font-extrabold px-2.5 py-1 rounded-full" style={{ background: '#f5b400', color: '#fff' }}>
+                PR
+              </span>
+            </div>
+          ))}
         </div>
       )}
 
+      {/* Share — invite, image-first */}
+      <div className="px-4 mb-5 chip-in" style={{ animationDelay: '1000ms' }}>
+        <div className="rounded-2xl p-4 text-center border-2 border-dashed" style={{ borderColor: '#c7d4ff', background: '#f3f6ff' }}>
+          <div className="font-extrabold text-lg" style={{ color: '#1e3a8a' }}>Share your win 🎉</div>
+          <p className="text-[13px] text-gray-500 mb-3">
+            Tag a friend — training is easier with a crew.
+          </p>
+          <button
+            onClick={handleShareImage}
+            disabled={shareState === 'working'}
+            className="btn-shine w-full text-white font-extrabold py-4 rounded-2xl text-lg"
+            style={{ background: 'var(--energy)', boxShadow: '0 6px 0 #2a4fd1', color: '#fff' }}
+          >
+            {shareState === 'working'
+              ? 'Making your card…'
+              : shareState === 'saved'
+                ? '✓ Image saved'
+                : shareState === 'shared'
+                  ? '✓ Shared!'
+                  : '📸 Share workout card'}
+          </button>
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            <ShareAction icon={copied ? '✓' : '📋'} label={copied ? 'Copied' : 'Copy'} onClick={handleCopy} />
+            <ShareAction icon="💬" label="Text" href={smsHref(shareText)} onClick={() => buzz(HAPTIC.tick)} />
+            <ShareAction icon="🟢" label="WhatsApp" href={whatsappHref(shareText)} onClick={() => buzz(HAPTIC.tick)} />
+            <ShareAction icon={saved ? '✓' : '⬇'} label={saved ? 'Saved' : 'Save log'} onClick={handleSave} />
+          </div>
+        </div>
+      </div>
+
       <div className="px-4 rise-in" style={{ animationDelay: '260ms' }}>
-        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
+        <div className="text-[13px] font-bold text-gray-500 mb-2">
           What you lifted · recent progress
         </div>
         {lifts.length === 0 ? (
@@ -230,30 +359,14 @@ export default function WorkoutSummary({ summary, history = [], onDone }) {
         )}
       </div>
 
-      <div className="px-4 mt-4 rise-in" style={{ animationDelay: '290ms' }}>
-        <div className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-2">
-          Share this session
-        </div>
-        <div className="grid grid-cols-4 gap-2">
-          <ShareAction icon={copied ? '✓' : '📋'} label={copied ? 'Copied' : 'Copy'} onClick={handleCopy} />
-          <ShareAction icon="💬" label="Text" href={smsHref(shareText)} onClick={() => buzz(HAPTIC.tick)} />
-          <ShareAction
-            icon="💬"
-            label="WhatsApp"
-            href={whatsappHref(shareText)}
-            accent
-            onClick={() => buzz(HAPTIC.tick)}
-          />
-          <ShareAction icon={saved ? '✓' : '⬇'} label={saved ? 'Saved' : 'Save'} onClick={handleSave} />
-        </div>
-      </div>
-
-      <div className="px-4 mt-6 rise-in" style={{ animationDelay: '320ms' }}>
+      <div className="h-24" />
+      <div className="fixed bottom-0 left-0 right-0 px-4 pt-3 pb-4 safe-bottom bg-surface/90 backdrop-blur z-20">
         <button
           onClick={onDone}
-          className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.98] transition-transform text-white font-bold py-4 rounded-xl text-lg"
+          className="max-w-md mx-auto block w-full text-white font-extrabold py-4 rounded-2xl text-lg"
+          style={{ background: 'var(--win)', boxShadow: '0 6px 0 #0b8a4f', color: '#fff' }}
         >
-          Done
+          Continue
         </button>
       </div>
     </div>

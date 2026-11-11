@@ -399,7 +399,7 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
               id: swapTarget.exerciseId,
             }
           }
-          exercises={exercises}
+          exercises={exercises.filter((e) => !e.archived)}
           onSelect={doSwap}
           onClose={() => setSwapKey(null)}
         />
@@ -407,7 +407,7 @@ export default function ActiveWorkout({ session, exercises, history, onChange, o
 
       {addingExercise && (
         <ExercisePickerModal
-          exercises={exercises}
+          exercises={exercises.filter((e) => !e.archived)}
           title="Add an exercise"
           onSelect={addExercise}
           onClose={() => setAddingExercise(false)}

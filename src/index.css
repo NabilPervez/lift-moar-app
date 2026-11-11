@@ -12,22 +12,35 @@
 }
 
 :root[data-theme='light'] {
-  --surface: 240 244 248;   /* #f0f4f8 page */
+  /* "Light + energy" (Nabil, 2026-11-11): crisp near-white page, pure white
+     cards, ink text, one electric-blue primary with a violet kick for hero
+     moments, emerald = progress, orange = streak fire. */
+  --surface: 247 248 252;   /* #f7f8fc page */
   --surface-800: 255 255 255;
-  --surface-700: 241 245 249;
-  --surface-600: 226 232 240;
-  --fg: 30 41 59;           /* #1e293b */
+  --surface-700: 240 242 248;
+  --surface-600: 226 230 240;
+  --fg: 15 23 42;           /* #0f172a */
+}
+
+:root {
+  --brand: #2f6bff;
+  --brand-2: #7b5cff;
+  --energy: linear-gradient(135deg, #2f6bff 0%, #7b5cff 55%, #ff4fa3 100%);
+  --fire: #ff7a1a;
+  --win: #12b76a;
+  --ease-out: cubic-bezier(.16, 1, .3, 1);
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
 }
 
 html, body { background-color: rgb(var(--surface)); overscroll-behavior-y: none; }
-body { color: rgb(var(--fg)); font-family: 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+body { color: rgb(var(--fg)); font-family: 'Inter Variable', 'Inter', system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
 * { -webkit-user-select: none; user-select: none; }
 input, textarea { -webkit-user-select: text; user-select: text; }
-input[type="number"] { -moz-appearance: textfield; font-family: 'JetBrains Mono', monospace; }
+input[type="number"] { -moz-appearance: textfield; font-variant-numeric: tabular-nums; }
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 ::-webkit-scrollbar { width: 0px; height: 0px; }
-.num { font-family: 'JetBrains Mono', monospace; }
+.num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 .safe-top { padding-top: env(safe-area-inset-top, 20px); }
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 20px); }
 @keyframes flashcue {
@@ -106,3 +119,65 @@ button, .tap { min-height: 44px; min-width: 44px; }
 :root[data-theme='light'] .text-pink-300 { color: #be185d; }
 :root[data-theme='light'] .text-fuchsia-300 { color: #a21caf; }
 :root[data-theme='light'] .text-teal-300 { color: #0f766e; }
+
+/* ============================== LIGHT + ENERGY ============================== */
+/* Primary buttons get the electric brand; cards lift with a soft colored shadow
+   instead of a dark-mode hairline. */
+:root[data-theme='light'] .bg-blue-600 { background: var(--brand); }
+:root[data-theme='light'] .hover\:bg-blue-500:hover { background: #4a7dff; }
+:root[data-theme='light'] .text-blue-400 { color: var(--brand); }
+:root[data-theme='light'] .bg-surface-800.rounded-2xl {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 20px -8px rgba(47, 107, 255, 0.14);
+}
+.bg-energy { background: var(--energy); }
+.text-energy { background: var(--energy); -webkit-background-clip: text; background-clip: text; color: transparent; }
+:active { transition-duration: 80ms; }
+button:active, .tap:active { transform: scale(0.97); }
+
+/* ============================== VIEW TRANSITIONS ==============================
+   Same-document View Transitions driven by App.jsx `go()`. data-nav on <html>
+   sets the direction. Bottom nav is its own named layer so it never slides.
+   Transform/opacity only; ≤ 320ms; off under reduced motion. */
+.app-screen { view-transition-name: screen; }
+nav[aria-label='Primary'] { view-transition-name: bottom-nav; }
+::view-transition-group(screen) { animation-duration: 320ms; animation-timing-function: var(--ease-out); }
+::view-transition-old(screen) { animation: vtFadeOut 160ms var(--ease-out) both; }
+::view-transition-new(screen) { animation: vtFadeIn 320ms var(--ease-out) both; }
+html[data-nav='forward'] ::view-transition-old(screen) { animation: vtOutLeft 220ms var(--ease-out) both; }
+html[data-nav='forward'] ::view-transition-new(screen) { animation: vtInRight 320ms var(--ease-out) both; }
+html[data-nav='back'] ::view-transition-old(screen) { animation: vtOutRight 220ms var(--ease-out) both; }
+html[data-nav='back'] ::view-transition-new(screen) { animation: vtInLeft 320ms var(--ease-out) both; }
+::view-transition-old(bottom-nav), ::view-transition-new(bottom-nav) { animation: none; }
+@keyframes vtFadeOut { to { opacity: 0; } }
+@keyframes vtFadeIn { from { opacity: 0; transform: translateY(6px); } }
+@keyframes vtOutLeft { to { opacity: 0; transform: translateX(-32px); } }
+@keyframes vtInRight { from { opacity: 0; transform: translateX(48px); } }
+@keyframes vtOutRight { to { opacity: 0; transform: translateX(32px); } }
+@keyframes vtInLeft { from { opacity: 0; transform: translateX(-48px); } }
+/* when a View Transition runs, skip the CSS fallback fade so it doesn't double up */
+html[data-nav] .screen-fade { animation: none; }
+
+/* ============================== CELEBRATION ============================== */
+@keyframes badgePop {
+  0% { transform: scale(0.2) rotate(-12deg); opacity: 0; }
+  60% { transform: scale(1.12) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+.badge-pop { animation: badgePop 700ms var(--ease-spring) both; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.bob { animation: bob 2.4s ease-in-out 900ms infinite; }
+@keyframes chipIn { from { opacity: 0; transform: translateY(18px) scale(0.92); } }
+.chip-in { animation: chipIn 520ms var(--ease-spring) both; }
+@keyframes dotFill { from { transform: scale(0); } 70% { transform: scale(1.25); } to { transform: scale(1); } }
+.dot-fill { animation: dotFill 420ms var(--ease-spring) both; }
+@keyframes flicker { 0%, 100% { transform: scale(1) rotate(-2deg); } 50% { transform: scale(1.12) rotate(3deg); } }
+.flame { display: inline-block; animation: flicker 1.1s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes shine { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(220%) skewX(-20deg); } }
+.btn-shine { position: relative; overflow: hidden; }
+.btn-shine::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation: shine 2.6s var(--ease-out) 1.4s infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .badge-pop, .bob, .chip-in, .dot-fill, .flame, .btn-shine::after { animation: none !important; }
+  button:active, .tap:active { transform: none; }
+}

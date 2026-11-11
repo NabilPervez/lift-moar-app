@@ -10,7 +10,7 @@ export const LS_KEYS = {
 }
 
 // Bump when makeDefault* content changes in a way existing installs should pick up.
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 export function loadLS(key, fallback) {
   try {
@@ -21,11 +21,33 @@ export function loadLS(key, fallback) {
   }
 }
 
+// Returns true on success. On failure (quota full, private mode) it fires a
+// `lift:save-failed` event so the app can warn instead of losing data silently.
 export function saveLS(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    return true
   } catch (e) {
-    /* storage full or unavailable — ignore */
+    try {
+      window.dispatchEvent(new CustomEvent('lift:save-failed', { detail: { key } }))
+    } catch {
+      /* no window */
+    }
+    return false
+  }
+}
+
+/**
+ * Ask the browser to keep this origin's storage (so iOS/Android won't evict it
+ * under pressure). Safe to call repeatedly; resolves to whether it's persisted.
+ */
+export async function requestPersistentStorage() {
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return false
+    if (await navigator.storage.persisted()) return true
+    return await navigator.storage.persist()
+  } catch {
+    return false
   }
 }
 

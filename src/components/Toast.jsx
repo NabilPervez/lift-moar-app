@@ -6,7 +6,7 @@ import { useEffect } from 'react'
  */
 export default function Toast({ toast, onDismiss, bottomOffset = 0 }) {
   useEffect(() => {
-    if (!toast) return undefined
+    if (!toast || toast.sticky) return undefined
     const t = setTimeout(onDismiss, 5000)
     return () => clearTimeout(t)
   }, [toast, onDismiss])

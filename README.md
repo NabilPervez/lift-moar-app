@@ -154,3 +154,9 @@ The **Progress** tab derives everything from `flt_history_v1`:
   row / curl / shrug / overhead-press variants.
 - **Specific Lift Progression** — heaviest working weight over time for any one
   logged exercise, chosen from a dropdown.
+
+## Nov 2026 update — light + energy, data safety, celebration
+- **Data safety:** storage persistence requested after first workout; save failures warn with a one-tap backup; exercises are archived (never deleted) so per-exercise history never orphans or splits; migrations never overwrite your schedule; sample workouts no longer seed real installs; full backup (workouts + exercises + plan + bodyweight) with merge-only restore and a 30-day backup nudge.
+- **PWA:** prompt-style updates that wait until no workout is active; `sw.js`/manifest served `no-cache`; self-hosted Inter; manifest shortcuts + screenshots; OG/Twitter/canonical metadata.
+- **Design:** light theme by default with an electric blue → violet → pink energy gradient; View Transitions between screens (direction-aware, reduced-motion safe); every screen opens at the top.
+- **Celebration:** Duolingo-style hero, count-up stat chips, weekly streak with day dots, PR cards, and a "Share workout card" button that renders a 1080×1350 image for the native share sheet.

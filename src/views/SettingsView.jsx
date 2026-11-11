@@ -4,35 +4,14 @@ import ConfirmButton from '../components/ConfirmButton'
 import { getSettings, patchSettings } from '../lib/settings'
 import { canNotify, ensureNotifyPermission } from '../lib/notify'
 
-const EXPORT_VERSION = 1
-
-function download(filename, text) {
-  const blob = new Blob([text], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-}
-
-function normalizeImport(parsed) {
-  const arr = Array.isArray(parsed) ? parsed : parsed && parsed.history
-  if (!Array.isArray(arr)) throw new Error('No history array found in file.')
-  const clean = arr.filter(
-    (w) => w && typeof w === 'object' && w.date && Array.isArray(w.exercises),
-  )
-  if (!clean.length) throw new Error('File contained no valid workouts.')
-  return clean
-}
+import { lastBackupLabel, parseBackup } from '../lib/backup'
 
 export default function SettingsView({
   theme,
   setTheme,
   history,
-  setHistory,
+  onExport,
+  onImport,
   onOpenHistory,
   onLoadSample,
   onClearHistory,
@@ -64,17 +43,8 @@ export default function SettingsView({
   }
 
   const doExport = () => {
-    const payload = {
-      app: 'lift-more',
-      type: 'history',
-      version: EXPORT_VERSION,
-      exportedAt: new Date().toISOString(),
-      count: history.length,
-      history,
-    }
-    const stamp = new Date().toISOString().slice(0, 10)
-    download(`lift-more-history-${stamp}.json`, JSON.stringify(payload, null, 2))
-    flash(`Exported ${history.length} workout${history.length === 1 ? '' : 's'}.`)
+    const n = onExport()
+    flash(`Backed up ${n} workout${n === 1 ? '' : 's'} plus your exercises and plan.`)
   }
 
   const onPickFile = async (e) => {
@@ -83,7 +53,7 @@ export default function SettingsView({
     if (!file) return
     try {
       const text = await file.text()
-      setPendingImport(normalizeImport(JSON.parse(text)))
+      setPendingImport(parseBackup(JSON.parse(text)))
       setMsg(null)
     } catch (err) {
       flash(err.message || 'Could not read that file.', 'err')
@@ -91,10 +61,13 @@ export default function SettingsView({
   }
 
   const applyImport = () => {
-    const n = pendingImport.length
-    setHistory(pendingImport)
+    const added = onImport(pendingImport)
     setPendingImport(null)
-    flash(`Imported ${n} workout${n === 1 ? '' : 's'}.`)
+    flash(
+      added
+        ? `Added ${added} workout${added === 1 ? '' : 's'}. Nothing was overwritten.`
+        : 'Everything in that file is already here.',
+    )
   }
 
   return (
@@ -199,15 +172,15 @@ export default function SettingsView({
               <span className="text-gray-500 text-lg">›</span>
             </button>
             <button onClick={doExport} className="w-full text-left px-4 py-4 tap">
-              <div className="font-semibold">Export history (JSON)</div>
-              <div className="text-gray-500 text-sm">Download a backup of every logged workout</div>
+              <div className="font-semibold">Back up everything (JSON)</div>
+              <div className="text-gray-500 text-sm">Workouts, exercises, plan and bodyweight · {lastBackupLabel()}</div>
             </button>
             <button
               onClick={() => fileRef.current && fileRef.current.click()}
               className="w-full text-left px-4 py-4 tap"
             >
-              <div className="font-semibold">Import history (JSON)</div>
-              <div className="text-gray-500 text-sm">Replace history from a previously exported file</div>
+              <div className="font-semibold">Restore from backup</div>
+              <div className="text-gray-500 text-sm">Merges into what's here — never overwrites</div>
             </button>
             <div className="px-4 py-4">
               <div className="font-semibold">Load sample data</div>
@@ -237,8 +210,8 @@ export default function SettingsView({
           {pendingImport && (
             <div className="mt-2 bg-surface-800 border border-blue-500/30 rounded-xl p-3 flex items-center justify-between gap-3">
               <div className="text-sm">
-                Replace <span className="font-bold num">{history.length}</span> with{' '}
-                <span className="font-bold num">{pendingImport.length}</span> imported?
+                Merge <span className="font-bold num">{pendingImport.history.length}</span> workouts into your{' '}
+                <span className="font-bold num">{history.length}</span>?
               </div>
               <div className="flex gap-2 flex-shrink-0">
                 <button
@@ -251,7 +224,7 @@ export default function SettingsView({
                   onClick={applyImport}
                   className="tap text-xs font-bold text-white px-3 py-2 rounded-lg bg-blue-600"
                 >
-                  Replace
+                  Merge
                 </button>
               </div>
             </div>
