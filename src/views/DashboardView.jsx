@@ -135,7 +135,7 @@ export default function DashboardView({
                 aria-label="Choose a lift"
                 value={selectedId || ''}
                 onChange={(e) => setSelected(e.target.value)}
-                className="bg-surface-700 rounded-lg p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-blue-500 max-w-[45%]"
+                className="bg-surface-700 rounded-lg p-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-[color:var(--brand)] max-w-[45%]"
               >
                 {options.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -202,7 +202,7 @@ export default function DashboardView({
                 return (
                   <div
                     key={w.id || `${w.date}-${i}`}
-                    className="bg-surface-700 rounded-xl flex items-stretch overflow-hidden"
+                    className="bg-surface-800 rounded-xl flex items-stretch overflow-hidden border" style={{ borderColor: 'rgb(var(--surface-600))' }}
                   >
                     <button
                       onClick={() => setDetail(w)}

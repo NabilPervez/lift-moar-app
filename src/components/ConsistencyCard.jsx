@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { consistency } from '../lib/analytics'
 
-const LEVEL = ['bg-surface-700', 'bg-emerald-500/40', 'bg-emerald-500/70', 'bg-emerald-400']
+const LEVEL = ['var(--surface-cell)', '#a9d3ba', '#3f9a6c', '#1a7a4c']
 
 export default function ConsistencyCard({ history }) {
   const c = useMemo(() => consistency(history, 12), [history])
@@ -12,34 +12,37 @@ export default function ConsistencyCard({ history }) {
       <div className="font-bold mb-3">Consistency</div>
 
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <Stat value={c.weekStreak} label={c.weekStreak === 1 ? 'week streak' : 'week streak'} accent="text-emerald-400" />
+        <Stat value={c.weekStreak} label={c.weekStreak === 1 ? 'week streak' : 'week streak'} accent="text-gold" />
         <Stat value={c.thisWeek} label="this week" />
         <Stat value={c.thisMonth} label="this month" />
       </div>
 
-      <div className="overflow-x-auto -mx-1 px-1">
-        <div className="grid grid-rows-7 grid-flow-col gap-[3px] w-max">
-          {c.heatmap.map((d, i) => (
-            <div
-              key={i}
-              title={d.count >= 0 ? new Date(d.date).toLocaleDateString() : ''}
-              className={`w-[10px] h-[10px] rounded-[2px] ${
-                d.count < 0 ? 'opacity-0' : LEVEL[Math.min(d.count, LEVEL.length - 1)]
-              }`}
-            />
-          ))}
-        </div>
+      {/* fills the card width: 12 week columns × 7 day rows, square cells */}
+      <div
+        className="grid grid-rows-7 grid-flow-col gap-1"
+        style={{ gridTemplateColumns: `repeat(${c.weeks}, minmax(0, 1fr))` }}
+      >
+        {c.heatmap.map((d, i) => (
+          <div
+            key={i}
+            title={d.count >= 0 ? new Date(d.date).toLocaleDateString() : ''}
+            className="aspect-square rounded-[4px]"
+            style={{
+              background: d.count < 0 ? 'transparent' : LEVEL[Math.min(d.count, LEVEL.length - 1)],
+            }}
+          />
+        ))}
       </div>
-      <div className="text-[10px] text-gray-500 mt-2">Last {c.weeks} weeks · {c.totalWorkouts} workouts total</div>
+      <div className="text-[13px] text-gray-500 mt-3">Last {c.weeks} weeks · {c.totalWorkouts} workouts total</div>
     </div>
   )
 }
 
 function Stat({ value, label, accent }) {
   return (
-    <div className="bg-surface-700 rounded-xl p-3 text-center">
-      <div className={`num font-black text-xl ${accent || ''}`}>{value}</div>
-      <div className="text-[10px] text-gray-500 uppercase tracking-wide">{label}</div>
+    <div className="rounded-xl p-3 text-center border" style={{ borderColor: 'rgb(var(--surface-600))' }}>
+      <div className={`num font-extrabold text-2xl ${accent || ''}`}>{value}</div>
+      <div className="text-[13px] text-gray-500">{label}</div>
     </div>
   )
 }
